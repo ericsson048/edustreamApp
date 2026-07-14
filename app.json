@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "EduStream",
+    "slug": "edustreamApp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "edustream",
+    "splash": {
+      "backgroundColor": "#f8fafc"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.edustream.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f8fafc",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.edustream.app",
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow EduStream to access your camera for live video sessions.",
+          "microphonePermission": "Allow EduStream to access your microphone for live audio.",
+          "recordAudioAndroid": true
+        }
+      ],
+      "expo-localization"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "06669953-ef1f-4805-b5c8-f7311cce93e2"
+      }
+    }
+  }
+}
