@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
+import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
+import { PressScale } from '../../src/components/PressScale';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ThemedText } from '../../src/components/ThemedText';
@@ -10,6 +11,7 @@ import { BorderRadius, Spacing } from '../../src/theme/colors';
 import { SkeletonLoader } from '../../src/components/SkeletonLoader';
 import { LanguageSwitcher } from '../../src/components/LanguageSwitcher';
 import { NotificationBell } from '../../src/components/NotificationBell';
+import { ThemeSwitcher } from '../../src/components/ThemeSwitcher';
 
 export default function ScheduleTabScreen() {
   const { colors } = useTheme();
@@ -45,10 +47,11 @@ export default function ScheduleTabScreen() {
             <ThemedText variant="caption" color="secondary" style={{ marginTop: 2 }}>Your upcoming live sessions</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/more/messages')} accessibilityLabel="Messages">
+            <PressScale onPress={() => router.push('/(tabs)/more/messages')} accessibilityLabel="Messages">
               <Ionicons name="chatbubbles-outline" size={22} color={colors.text} />
-            </TouchableOpacity>
+            </PressScale>
             <NotificationBell />
+            <ThemeSwitcher />
             <LanguageSwitcher />
           </View>
         </View>
@@ -73,7 +76,7 @@ export default function ScheduleTabScreen() {
           sessions.map((s) => {
             const cfg = statusConfig[s.status] || statusConfig.SCHEDULED;
             return (
-              <TouchableOpacity key={s.id} onPress={() => router.push(`/live/${s.id}`)} activeOpacity={0.7}>
+              <PressScale key={s.id} onPress={() => router.push(`/live/${s.id}`)} activeOpacity={0.7}>
                 <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing.lg, marginBottom: Spacing.md }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flex: 1 }}>
@@ -100,7 +103,7 @@ export default function ScheduleTabScreen() {
                     </View>
                   )}
                 </ThemedView>
-              </TouchableOpacity>
+              </PressScale>
             );
           })
         )}

@@ -9,6 +9,15 @@ export interface Discussion {
   tags: string[];
   likes_count: number;
   author_name?: string;
+  created_at?: string;
+}
+
+export interface DiscussionComment {
+  id: string;
+  discussion: string;
+  content: string;
+  author_name?: string;
+  created_at: string;
 }
 
 export interface StudyGroup {
@@ -43,6 +52,22 @@ export const communityService = {
   async listStudyGroups(): Promise<StudyGroup[]> {
     const { data } = await apiClient.get<Paginated<StudyGroup>>('/study-groups/');
     return data.results ?? [];
+  },
+  async getDiscussion(id: string): Promise<Discussion> {
+    const { data } = await apiClient.get<Discussion>(`/discussions/${id}/`);
+    return data;
+  },
+  async likeDiscussion(id: string): Promise<{ likes_count: number }> {
+    const { data } = await apiClient.post<{ likes_count: number }>(`/discussions/${id}/like/`);
+    return data;
+  },
+  async listDiscussionComments(discussionId: string): Promise<DiscussionComment[]> {
+    const { data } = await apiClient.get<Paginated<DiscussionComment>>(`/discussion-comments/?discussion=${discussionId}`);
+    return data.results ?? [];
+  },
+  async createDiscussionComment(discussion: string, content: string): Promise<DiscussionComment> {
+    const { data } = await apiClient.post<DiscussionComment>('/discussion-comments/', { discussion, content });
+    return data;
   },
   async createDiscussion(payload: { title: string; content: string; category?: string; tags?: string[] }): Promise<Discussion> {
     const { data } = await apiClient.post<Discussion>('/discussions/', payload);

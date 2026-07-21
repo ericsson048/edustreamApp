@@ -32,4 +32,7 @@ export const authService = {
   async forgotPassword(email: string) {
     await apiClient.post('/auth/forgot-password/', { email });
   },
+  async changePassword(payload: { old_password: string; new_password: string }) {
+    await apiClient.post('/auth/change-password/', payload);
+  },
 };

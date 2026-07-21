@@ -10,6 +10,7 @@ interface AuthContextValue {
   register: (payload: { email: string; full_name: string; role: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<AuthUser>) => Promise<void>;
+  changePassword: (old_password: string, new_password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextValue>({
   register: async () => {},
   logout: async () => {},
   updateUser: async () => {},
+  changePassword: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -37,9 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await authService.getMe();
         setUser(me);
       }
-    } catch {
-      await SecureStore.deleteItemAsync('edustream_access_token');
-      await SecureStore.deleteItemAsync('edustream_refresh_token');
+    } catch (error: unknown) {
+      // Supprime les tokens seulement si c'est une erreur 401 (token invalide/expiré)
+      // Pour les erreurs réseau (timeout, pas de connexion), on garde les tokens
+      const isAuthError = (error as any)?.response?.status === 401;
+      const isNetworkError = !(error as any)?.response; // pas de réponse = erreur réseau
+      if (isAuthError || (!isNetworkError)) {
+        await SecureStore.deleteItemAsync('edustream_access_token');
+        await SecureStore.deleteItemAsync('edustream_refresh_token');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -69,8 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   };
 
+  const changePassword = async (old_password: string, new_password: string) => {
+    await authService.changePassword({ old_password, new_password });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, register, logout, updateUser, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

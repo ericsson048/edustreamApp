@@ -1,4 +1,5 @@
-import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet } from 'react-native';
+import { PressScale } from './PressScale';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
@@ -17,7 +18,7 @@ interface Props {
 export function CourseCard({ title, thumbnail, instructor, progress, category, onPress }: Props) {
   const { colors } = useTheme();
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={{ marginBottom: Spacing.md }}>
+    <PressScale onPress={onPress} style={{ marginBottom: Spacing.md }}>
       <ThemedView variant="card" rounded="xl" elevated style={{ overflow: 'hidden' }}>
         {thumbnail ? (
           <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
@@ -49,7 +50,7 @@ export function CourseCard({ title, thumbnail, instructor, progress, category, o
           )}
         </View>
       </ThemedView>
-    </TouchableOpacity>
+    </PressScale>
   );
 }
 

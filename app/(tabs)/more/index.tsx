@@ -1,4 +1,5 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { PressScale } from '../../../src/components/PressScale';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,6 +11,7 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { BorderRadius, Spacing } from '../../../src/theme/colors';
 import { LanguageSwitcher } from '../../../src/components/LanguageSwitcher';
 import { NotificationBell } from '../../../src/components/NotificationBell';
+import { ThemeSwitcher } from '../../../src/components/ThemeSwitcher';
 
 const baseMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; route: string; color: string }[] = [
   { icon: 'git-network-outline', label: 'Skill Tree', route: 'skill-tree', color: '#6366F1' },
@@ -22,6 +24,7 @@ const baseMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; rout
   { icon: 'notifications-outline', label: 'Notifications', route: 'notifications', color: '#8B5CF6' },
   { icon: 'ribbon-outline', label: 'Certificate', route: 'certificate', color: '#EC4899' },
   { icon: 'person-outline', label: 'Profile', route: 'profile', color: '#4F46E5' },
+  { icon: 'settings-outline', label: 'Settings', route: 'settings', color: '#64748B' },
 ];
 
 export default function MoreScreen() {
@@ -45,15 +48,16 @@ export default function MoreScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <NotificationBell />
+          <ThemeSwitcher />
           <LanguageSwitcher />
         </View>
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.xl, paddingBottom: Spacing['6xl'] }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
           {menuItems.map((item) => (
-            <TouchableOpacity
+            <PressScale
               key={item.route}
-              onPress={() => router.push(item.route.startsWith('/') ? item.route : `/(tabs)/more/${item.route}`)}
+              onPress={() => router.navigate(item.route)}
               activeOpacity={0.7}
               style={{ width: '46%' }}
             >
@@ -63,7 +67,7 @@ export default function MoreScreen() {
                 </View>
                 <ThemedText variant="caption" bold style={{ marginTop: Spacing.sm, textAlign: 'center' }}>{item.label}</ThemedText>
               </ThemedView>
-            </TouchableOpacity>
+            </PressScale>
           ))}
         </View>
 
@@ -79,13 +83,13 @@ export default function MoreScreen() {
           </View>
         </ThemedView>
 
-        <TouchableOpacity
+        <PressScale
           onPress={handleLogout}
           style={[styles.logoutBtn, { backgroundColor: colors.surface, borderColor: colors.error }]}
         >
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <ThemedText bold style={{ color: colors.error, marginLeft: Spacing.sm }}>Sign Out</ThemedText>
-        </TouchableOpacity>
+        </PressScale>
       </ScrollView>
     </View>
   );

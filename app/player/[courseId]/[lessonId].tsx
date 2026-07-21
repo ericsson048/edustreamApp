@@ -226,7 +226,7 @@ export default function PlayerScreen() {
               )}
 
               {/* Content */}
-              {lesson.content && lesson.lesson_type === 'TEXT' && (
+              {lesson.content && (
                 <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing.lg, marginTop: Spacing.lg }}>
                   <MarkdownRenderer content={lesson.content} />
                 </ThemedView>

@@ -1,18 +1,26 @@
 import { apiClient } from './apiClient';
 
-export interface TutorMessage {
-  id: string;
-  conversation: string;
-  role: 'user' | 'assistant';
-  content: string;
-  created_at: string;
-}
-
-export interface TutorConversation {
+export interface ConversationItem {
   id: string;
   title: string;
-  course?: string;
-  lesson?: string;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorMessageItem {
+  id: string;
+  prompt: string;
+  response: string;
+  created_at: string;
+  conversation: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
   created_at: string;
 }
 
@@ -22,20 +30,23 @@ interface Paginated<T> {
 }
 
 export const aiService = {
-  async listConversations(params?: Record<string, unknown>) {
-    const { data } = await apiClient.get<Paginated<TutorConversation>>('/ai/tutor/conversations/', { params });
+  async listConversations(): Promise<ConversationItem[]> {
+    const { data } = await apiClient.get<Paginated<ConversationItem>>('/ai/tutor/conversations/');
+    return data.results ?? [];
+  },
+  async createConversation(title?: string): Promise<ConversationItem> {
+    const { data } = await apiClient.post<ConversationItem>('/ai/tutor/conversations/', { title: title || 'AI Tutor' });
     return data;
   },
-  async createConversation(payload: { title?: string; course?: string; lesson?: string }) {
-    const { data } = await apiClient.post<TutorConversation>('/ai/tutor/conversations/', payload);
-    return data;
+  async deleteConversation(id: string): Promise<void> {
+    await apiClient.delete(`/ai/tutor/conversations/${id}/`);
   },
-  async listMessages(conversationId: string) {
-    const { data } = await apiClient.get<Paginated<TutorMessage>>('/ai/tutor/messages/', { params: { conversation: conversationId } });
-    return data;
+  async listMessages(conversationId: string): Promise<TutorMessageItem[]> {
+    const { data } = await apiClient.get<Paginated<TutorMessageItem>>(`/ai/tutor/messages/?conversation=${conversationId}`);
+    return data.results ?? [];
   },
-  async askTutor(payload: { conversation: string; message: string; course?: string; lesson?: string }) {
-    const { data } = await apiClient.post<TutorMessage>('/ai/tutor/chat/', payload);
+  async askTutor(prompt: string, conversation_id?: string, history?: { role: string; content: string }[]): Promise<{ response: string; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
+    const { data } = await apiClient.post<{ response: string; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }>('/ai/tutor/chat/', { prompt, conversation_id, history });
     return data;
   },
 };

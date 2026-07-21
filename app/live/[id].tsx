@@ -12,7 +12,6 @@ import { SkeletonLoader } from '../../src/components/SkeletonLoader';
 import { useAlert } from '../../src/components/AlertDialog';
 import { BASE_URL } from '../../src/services/apiClient';
 import { PreJoinCard } from '../../src/features/live-session/PreJoinCard';
-import { NativeRoomView } from '../../src/features/live-session/NativeRoomView';
 import { liveSessionStyles as styles } from '../../src/features/live-session/styles';
 
 const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || BASE_URL).replace('/api/v1', '');
@@ -65,16 +64,40 @@ export default function LiveSessionScreen() {
   };
 
   if (inRoom && session) {
+    return <RoomViewWrapper title={session.title} sessionId={id} wsHost={API_ORIGIN.replace(/^https?:\/\//, '')} authToken={authToken} onLeave={() => setInRoom(false)} />;
+  }
+
+function RoomViewWrapper(props: { title: string; sessionId: string; wsHost: string; authToken: string; onLeave: () => void }) {
+  const [Room, setRoom] = useState<React.ComponentType<any> | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const mod = await import('../../src/features/live-session/NativeRoomView');
+        setRoom(() => mod.NativeRoomView);
+      } catch {
+        setLoadError(true);
+      }
+    })();
+  }, []);
+
+  if (loadError) {
     return (
-      <NativeRoomView
-        title={session.title}
-        sessionId={id}
-        wsHost={API_ORIGIN.replace(/^https?:\/\//, '')}
-        authToken={authToken}
-        onLeave={() => setInRoom(false)}
-      />
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name="warning-outline" size={48} color={colors.error} />
+        <ThemedText style={{ marginTop: Spacing.md }}>Live room unavailable in Expo Go.</ThemedText>
+      </View>
     );
   }
+
+  if (!Room) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+
+  return <Room {...props} />;
+}
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

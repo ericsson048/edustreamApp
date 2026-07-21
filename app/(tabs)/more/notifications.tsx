@@ -45,6 +45,13 @@ export default function NotificationsScreen() {
     setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
   };
 
+  const handlePress = (n: Notification) => {
+    markRead(n);
+    if (n.link) {
+      try { router.push(n.link as any); } catch {}
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
@@ -85,7 +92,7 @@ export default function NotificationsScreen() {
           items.map((n) => (
             <TouchableOpacity
               key={n.id}
-              onPress={() => markRead(n)}
+              onPress={() => handlePress(n)}
               activeOpacity={0.7}
               style={{ marginBottom: Spacing.sm }}
             >

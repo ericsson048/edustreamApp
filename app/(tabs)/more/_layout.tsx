@@ -19,6 +19,7 @@ export default function MoreLayout() {
       <Stack.Screen name="schedule" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="certificate" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

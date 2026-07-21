@@ -1,4 +1,8 @@
 import { apiClient } from './apiClient';
+import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.204.215.26:8000/api/v1';
 
 export interface UserStats {
   courses_in_progress: number;
@@ -141,5 +145,17 @@ export const learningService = {
   async createAssignment(payload: { course: string; title: string; description: string; due_date: string; points: number; type: string }) {
     const { data } = await apiClient.post<Assignment>('/assignments/', payload);
     return data;
+  },
+  async uploadFile(fileUri: string, fileName: string, fileType: string): Promise<string> {
+    const token = await SecureStore.getItemAsync('edustream_access_token');
+    const form = new FormData();
+    form.append('file', { uri: fileUri, name: fileName, type: fileType } as any);
+    const { data } = await axios.post<{ url: string }>(`${BASE_URL}/upload/`, form, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return data.url;
   },
 };

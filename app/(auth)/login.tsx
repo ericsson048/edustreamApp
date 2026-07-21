@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { PressScale } from '../../src/components/PressScale';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,6 +10,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useAlert } from '../../src/components/AlertDialog';
 import { BorderRadius, FontSize, Spacing } from '../../src/theme/colors';
+import { ThemeSwitcher } from '../../src/components/ThemeSwitcher';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -37,6 +39,9 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.inner, { paddingTop: insets.top + Spacing['5xl'] }]}>
+        <View style={{ alignItems: 'flex-end', marginBottom: Spacing.md }}>
+          <ThemeSwitcher size={24} />
+        </View>
         <View style={styles.top}>
           <View style={[styles.logoWrap, { backgroundColor: colors.primary }]}>
             <ThemedText style={{ fontSize: 32, color: '#fff', fontWeight: '700' }}>E</ThemedText>
@@ -68,29 +73,29 @@ export default function LoginScreen() {
               secureTextEntry={!showPassword}
               style={[styles.input, { color: colors.text, flex: 1 }]}
             />
-            <TouchableOpacity onPress={() => setShowPassword((p) => !p)} style={{ padding: Spacing.sm }}>
+            <PressScale onPress={() => setShowPassword((p) => !p)} style={{ padding: Spacing.sm }}>
               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
-            </TouchableOpacity>
+            </PressScale>
           </ThemedView>
 
-          <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+          <PressScale onPress={() => router.push('/(auth)/forgot-password')}>
             <ThemedText variant="caption" style={{ color: colors.primary, textAlign: 'right', marginTop: Spacing.sm }}>Forgot password?</ThemedText>
-          </TouchableOpacity>
+          </PressScale>
 
-          <TouchableOpacity
+          <PressScale
             onPress={handleLogin}
             disabled={loading}
             style={[styles.button, { backgroundColor: colors.primary, marginTop: Spacing['2xl'] }]}
           >
             {loading ? <ActivityIndicator color="#fff" /> : <ThemedText bold style={{ color: '#fff', fontSize: FontSize.lg }}>Sign In</ThemedText>}
-          </TouchableOpacity>
+          </PressScale>
         </View>
 
         <View style={styles.bottom}>
           <ThemedText variant="body" color="secondary">Don't have an account? </ThemedText>
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+          <PressScale onPress={() => router.push('/(auth)/register')}>
             <ThemedText variant="body" bold style={{ color: colors.primary }}>Sign Up</ThemedText>
-          </TouchableOpacity>
+          </PressScale>
         </View>
 
         <ThemedView variant="secondary" rounded="lg" style={{ marginTop: Spacing['3xl'], padding: Spacing.lg, alignItems: 'center' }}>

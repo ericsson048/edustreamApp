@@ -17,8 +17,8 @@ export function SkeletonLoader({ width = '100%', height = 20, rounded = 'lg', st
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, easing: Easing.ease, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, easing: Easing.ease, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.7, duration: 500, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 700, easing: Easing.in(Easing.ease), useNativeDriver: true }),
       ])
     );
     anim.start();

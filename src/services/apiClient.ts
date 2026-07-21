@@ -1,11 +1,12 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.88.22:8000/api/v1';
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.88.12:8000/api/v1';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 10000, // 10 secondes max - évite le blocage infini si le backend est injoignable
 });
 
 apiClient.interceptors.request.use(async (config) => {

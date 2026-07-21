@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
+import { PressScale } from '../../src/components/PressScale';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../../src/components/ThemedText';
@@ -12,6 +13,7 @@ import { Spacing, BorderRadius } from '../../src/theme/colors';
 import { SkeletonLoader } from '../../src/components/SkeletonLoader';
 import { LanguageSwitcher } from '../../src/components/LanguageSwitcher';
 import { NotificationBell } from '../../src/components/NotificationBell';
+import { ThemeSwitcher } from '../../src/components/ThemeSwitcher';
 
 const filters = ['All', 'In Progress', 'Completed'] as const;
 
@@ -20,6 +22,7 @@ export default function CoursesScreen() {
   const router = useRouter();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, number>>({});
+  const [thumbnailMap, setThumbnailMap] = useState<Record<string, string | undefined>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>('All');
@@ -41,6 +44,9 @@ export default function CoursesScreen() {
       );
       const lessonCountMap: Record<string, number> = {};
       courses.forEach(c => { if (c) lessonCountMap[c.id] = c.modules?.reduce((s, m) => s + (m.lessons?.length || 0), 0) ?? 0; });
+      const tMap: Record<string, string | undefined> = {};
+      courses.forEach(c => { if (c) tMap[c.id] = c.thumbnail; });
+      setThumbnailMap(tMap);
       const map: Record<string, number> = {};
       progressResults.forEach(({ enrollmentId, progress }) => {
         const e = enrollments.find(en => en.id === enrollmentId);
@@ -73,10 +79,11 @@ export default function CoursesScreen() {
         subtitle={`${enrollments.length} enrolled`}
         rightAction={
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/more/messages')} accessibilityLabel="Messages">
+            <PressScale onPress={() => router.push('/(tabs)/more/messages')} accessibilityLabel="Messages">
               <Ionicons name="chatbubbles-outline" size={22} color={colors.text} />
-            </TouchableOpacity>
+            </PressScale>
             <NotificationBell />
+            <ThemeSwitcher />
             <LanguageSwitcher />
           </View>
         }
@@ -90,7 +97,7 @@ export default function CoursesScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.xl }}>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             {filters.map((f) => (
-              <TouchableOpacity
+              <PressScale
                 key={f}
                 onPress={() => setActiveFilter(f)}
                 style={[
@@ -106,7 +113,7 @@ export default function CoursesScreen() {
                 >
                   {f}
                 </ThemedText>
-              </TouchableOpacity>
+              </PressScale>
             ))}
           </View>
         </ScrollView>
@@ -130,7 +137,7 @@ export default function CoursesScreen() {
               key={e.id}
               title={e.course_title}
               instructor={e.instructor_name}
-              thumbnail={e.thumbnail}
+              thumbnail={e.thumbnail || thumbnailMap[e.course]}
               progress={progressMap[e.id]}
               onPress={() => router.push(`/course/${e.course}`)}
             />

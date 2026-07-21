@@ -3,6 +3,8 @@ import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Style
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker';
+import { useTranslation } from 'react-i18next';
 import { ThemedText } from '../../../src/components/ThemedText';
 import { ThemedView } from '../../../src/components/ThemedView';
 import { useTheme } from '../../../src/contexts/ThemeContext';
@@ -16,9 +18,11 @@ export default function SubmitAssignmentScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { alert } = useAlert();
+  const { t } = useTranslation();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [contentText, setContentText] = useState('');
+  const [file, setFile] = useState<{ uri: string; name: string; size?: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<Submission | null>(null);
 
@@ -27,15 +31,32 @@ export default function SubmitAssignmentScreen() {
     learningService.getAssignment(id).then(setAssignment).catch(() => router.back()).finally(() => setLoading(false));
   }, [id]);
 
+  const pickFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({});
+      if (!result.canceled && result.assets?.[0]) {
+        setFile({ uri: result.assets[0].uri, name: result.assets[0].name, size: result.assets[0].size });
+      }
+    } catch {}
+  };
+
   const handleSubmit = async () => {
-    if (!id) return;
+    if (!id || (!contentText.trim() && !file)) return;
     setSubmitting(true);
     try {
-      const sub = await learningService.createSubmission({ assignment: id, content_text: contentText.trim() || undefined });
+      let file_url: string | undefined;
+      if (file) {
+        file_url = await learningService.uploadFile(file.uri, file.name, 'application/octet-stream');
+      }
+      const sub = await learningService.createSubmission({
+        assignment: id,
+        content_text: contentText.trim() || undefined,
+        file_url,
+      });
       setSubmitted(sub);
-      await alert({ title: 'Submitted!', message: 'Your assignment has been submitted.' });
+      await alert({ title: t('common.submit'), message: t('assignments.submittedMessage') });
     } catch {
-      await alert({ title: 'Error', message: 'Could not submit. Please try again.' });
+      await alert({ title: t('common.error'), message: 'Could not submit. Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -61,12 +82,12 @@ export default function SubmitAssignmentScreen() {
             <View style={[styles.successIcon, { backgroundColor: colors.success + '20' }]}>
               <Ionicons name="checkmark-circle" size={48} color={colors.success} />
             </View>
-            <ThemedText variant="h3" bold style={{ marginTop: Spacing.lg }}>Submitted!</ThemedText>
+            <ThemedText variant="h3" bold style={{ marginTop: Spacing.lg }}>{t('assignments.submitted')}</ThemedText>
             <ThemedText variant="body" color="secondary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
-              Your assignment has been submitted successfully. The instructor will review it shortly.
+              {t('assignments.submittedMessage')}
             </ThemedText>
             <TouchableOpacity onPress={() => router.back()} style={[styles.btn, { backgroundColor: colors.primary, marginTop: Spacing['2xl'] }]}>
-              <ThemedText bold style={{ color: '#fff' }}>Back to Assignments</ThemedText>
+              <ThemedText bold style={{ color: '#fff' }}>{t('common.back')}</ThemedText>
             </TouchableOpacity>
           </ThemedView>
         ) : assignment ? (
@@ -85,7 +106,7 @@ export default function SubmitAssignmentScreen() {
               </View>
               <ThemedView variant="secondary" rounded="lg" style={{ padding: Spacing.md, marginTop: Spacing.lg }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <ThemedText variant="caption" color="secondary">Due: {new Date(assignment.due_date).toLocaleDateString()}</ThemedText>
+                  <ThemedText variant="caption" color="secondary">{t('assignments.due', { date: new Date(assignment.due_date).toLocaleDateString() })}</ThemedText>
                   <ThemedText variant="caption" color="secondary">{assignment.points} pts</ThemedText>
                 </View>
               </ThemedView>
@@ -93,28 +114,39 @@ export default function SubmitAssignmentScreen() {
             </ThemedView>
 
             <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing.xl, marginTop: Spacing.xl }}>
-              <ThemedText variant="body" bold>Your Submission</ThemedText>
+              <ThemedText variant="body" bold>{t('common.submit')}</ThemedText>
               <TextInput
                 multiline
-                placeholder="Write your answer here..."
+                placeholder={t('assignments.writeAnswer')}
                 placeholderTextColor={colors.textMuted}
                 value={contentText}
                 onChangeText={setContentText}
                 style={[styles.textArea, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
               />
+              <TouchableOpacity onPress={pickFile} style={[styles.fileBtn, { borderColor: colors.border }]}>
+                <Ionicons name="document-attach-outline" size={20} color={colors.primary} />
+                <ThemedText style={{ color: colors.primary, marginLeft: Spacing.sm, flex: 1 }}>
+                  {file ? file.name : t('assignments.addFile')}
+                </ThemedText>
+                {file && (
+                  <TouchableOpacity onPress={() => setFile(null)}>
+                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
             </ThemedView>
 
             <TouchableOpacity
               onPress={handleSubmit}
-              disabled={submitting}
-              style={[styles.btn, { backgroundColor: colors.primary, marginTop: Spacing.xl }]}
+              disabled={submitting || (!contentText.trim() && !file)}
+              style={[styles.btn, { backgroundColor: colors.primary, marginTop: Spacing.xl, opacity: (!contentText.trim() && !file) || submitting ? 0.5 : 1 }]}
             >
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
                   <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
-                  <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm }}>Submit Assignment</ThemedText>
+                  <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm }}>{t('assignments.submit')}</ThemedText>
                 </>
               )}
             </TouchableOpacity>
@@ -138,7 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textArea: {
-    minHeight: 160,
+    minHeight: 120,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     padding: Spacing.lg,
@@ -146,6 +178,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlignVertical: 'top',
+  },
+  fileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
   },
   btn: {
     flexDirection: 'row',

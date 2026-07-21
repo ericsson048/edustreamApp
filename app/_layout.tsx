@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '../src/contexts/ThemeContext';
 import { OnboardingProvider, useOnboarding } from '../src/contexts/OnboardingContext';
 import { AlertProvider } from '../src/components/AlertDialog';
+import { NetworkProvider } from '../src/contexts/NetworkContext';
+import { OfflineBanner } from '../src/components/OfflineBanner';
 import '../src/i18n';
 import { NotificationSetup } from '../src/components/NotificationSetup';
 
@@ -23,6 +25,8 @@ function RootNavigator() {
 
   return (
     <AlertProvider>
+      <NotificationSetup />
+      <OfflineBanner />
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {!hasCompleted ? (
         <Stack screenOptions={{ headerShown: false }}>
@@ -34,7 +38,6 @@ function RootNavigator() {
         </Stack>
       ) : (
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-          <NotificationSetup />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="course/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="player/[courseId]/[lessonId]" options={{ headerShown: false }} />
@@ -45,8 +48,7 @@ function RootNavigator() {
           <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="ai-tutor/[courseId]/[lessonId]" options={{ headerShown: false }} />
           <Stack.Screen name="messages/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="community/groups/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="community/discussions/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="community" options={{ headerShown: false }} />
           {/* instructor/ routes - disabled for student-only phase */}
         </Stack>
       )}
@@ -57,11 +59,13 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
+      <NetworkProvider>
       <OnboardingProvider>
         <AuthProvider>
           <RootNavigator />
         </AuthProvider>
       </OnboardingProvider>
+      </NetworkProvider>
     </ThemeProvider>
   );
 }
