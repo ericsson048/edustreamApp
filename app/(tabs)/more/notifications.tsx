@@ -9,12 +9,15 @@ import { useTheme } from '../../../src/contexts/ThemeContext';
 import { notificationService, type Notification } from '../../../src/services/notifications';
 import { BorderRadius, Spacing } from '../../../src/theme/colors';
 import { SkeletonLoader } from '../../../src/components/SkeletonLoader';
+import { mapLinkToMobile } from '../../../src/services/pushNotifications';
 
 const typeIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   COURSE_UPDATE: 'book-outline',
   ASSIGNMENT: 'document-text-outline',
   GRADE: 'bar-chart-outline',
   MESSAGE: 'chatbubble-outline',
+  LIVE_SESSION: 'videocam-outline',
+  LIVE_REMINDER: 'alarm-outline',
   SKILL_UNLOCK: 'star-outline',
   SYSTEM: 'notifications-outline',
 };
@@ -48,7 +51,7 @@ export default function NotificationsScreen() {
   const handlePress = (n: Notification) => {
     markRead(n);
     if (n.link) {
-      try { router.push(n.link as any); } catch {}
+      try { router.push(mapLinkToMobile(n.link) as any); } catch {}
     }
   };
 

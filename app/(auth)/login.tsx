@@ -18,8 +18,8 @@ export default function LoginScreen() {
   const { alert } = useAlert();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [email, setEmail] = useState('student@edustream.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +28,6 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email, password);
-      router.replace('/(tabs)/dashboard');
     } catch (e: any) {
       await alert({ title: 'Error', message: e?.response?.data?.detail || 'Login failed' });
     } finally {
@@ -97,12 +96,6 @@ export default function LoginScreen() {
             <ThemedText variant="body" bold style={{ color: colors.primary }}>Sign Up</ThemedText>
           </PressScale>
         </View>
-
-        <ThemedView variant="secondary" rounded="lg" style={{ marginTop: Spacing['3xl'], padding: Spacing.lg, alignItems: 'center' }}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.info} />
-          <ThemedText variant="caption" bold style={{ marginTop: 4 }}>Demo Account</ThemedText>
-          <ThemedText variant="caption" color="secondary">student@edustream.com / password123</ThemedText>
-        </ThemedView>
       </View>
     </KeyboardAvoidingView>
   );

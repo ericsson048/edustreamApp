@@ -22,16 +22,22 @@ interface PreJoinCardProps {
   colors: ThemeColors;
   joining: boolean;
   joined: boolean;
+  isHost: boolean;
+  admitted: boolean;
+  waitingEntry: boolean;
   onJoin: () => void;
   onEnterRoom: () => void;
+  onGoLive?: () => void;
+  onRequestEntry?: () => void;
 }
 
-export function PreJoinCard({ session, colors, joining, joined, onJoin, onEnterRoom }: PreJoinCardProps) {
+export function PreJoinCard({ session, colors, joining, joined, isHost, admitted, waitingEntry, onJoin, onEnterRoom, onGoLive, onRequestEntry }: PreJoinCardProps) {
   const status = (session.status as SessionStatus) || 'SCHEDULED';
   const cfg = STATUS_CONFIG[status];
   const statusColor = colors[cfg.colorKey];
 
   const isLive = status === 'LIVE';
+  const isWaiting = status === 'WAITING';
   const isScheduled = status === 'SCHEDULED';
   const isEnded = status === 'ENDED';
 
@@ -40,9 +46,9 @@ export function PreJoinCard({ session, colors, joining, joined, onJoin, onEnterR
       <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing['2xl'], alignItems: 'center' }}>
         <View style={[styles.liveIcon, { backgroundColor: isLive ? colors.error + '20' : colors.primaryLight }]}>
           <Ionicons
-            name={isLive ? 'radio' : isEnded ? 'checkmark-circle-outline' : 'calendar-outline'}
+            name={isLive ? 'radio' : isWaiting ? 'hourglass' : isEnded ? 'checkmark-circle-outline' : 'calendar-outline'}
             size={44}
-            color={isLive ? colors.error : colors.primary}
+            color={isLive ? colors.error : isWaiting ? colors.warning : colors.primary}
           />
         </View>
         <ThemedText variant="h2" bold style={{ marginTop: Spacing.lg, textAlign: 'center' }}>
@@ -77,30 +83,80 @@ export function PreJoinCard({ session, colors, joining, joined, onJoin, onEnterR
       </ThemedView>
 
       <View style={{ marginTop: Spacing['2xl'] }}>
-        {isLive && !joined && (
-          <TouchableOpacity onPress={onJoin} disabled={joining} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
+        {/* Host: WAITING → Go Live */}
+        {isWaiting && isHost && (
+          <TouchableOpacity onPress={onGoLive} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
+            <Ionicons name="radio" size={22} color="#fff" />
+            <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
+              Go Live
+            </ThemedText>
+          </TouchableOpacity>
+        )}
+
+        {/* Host: LIVE → Enter Room */}
+        {isLive && isHost && (
+          <TouchableOpacity onPress={joined ? onEnterRoom : onJoin} disabled={joining} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
             {joining ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Ionicons name="enter-outline" size={22} color="#fff" />
+                <Ionicons name="videocam-outline" size={22} color="#fff" />
                 <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
-                  Join Session
+                  {joined ? 'Enter Video Room' : 'Join Session'}
                 </ThemedText>
               </>
             )}
           </TouchableOpacity>
         )}
 
-        {isLive && joined && (
-          <TouchableOpacity onPress={onEnterRoom} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
-            <Ionicons name="videocam-outline" size={22} color="#fff" />
+        {/* Student: LIVE + admitted → Join / Enter */}
+        {isLive && !isHost && admitted && (
+          <>
+            {!joined ? (
+              <TouchableOpacity onPress={onJoin} disabled={joining} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
+                {joining ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="enter-outline" size={22} color="#fff" />
+                    <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
+                      Join Session
+                    </ThemedText>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={onEnterRoom} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
+                <Ionicons name="videocam-outline" size={22} color="#fff" />
+                <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
+                  Enter Video Room
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {/* Student: LIVE + not admitted + not waiting → Request entry */}
+        {isLive && !isHost && !admitted && !waitingEntry && (
+          <TouchableOpacity onPress={onRequestEntry} style={[styles.joinBtn, { backgroundColor: colors.primary }]}>
+            <Ionicons name="key-outline" size={22} color="#fff" />
             <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
-              Enter Video Room
+              Request to Join
             </ThemedText>
           </TouchableOpacity>
         )}
 
+        {/* Student: Waiting for admission */}
+        {waitingEntry && (
+          <ThemedView variant="secondary" rounded="xl" style={styles.noticeCard}>
+            <Ionicons name="hourglass-outline" size={18} color={colors.warning} />
+            <ThemedText variant="caption" style={{ color: colors.warning, marginLeft: Spacing.sm, flex: 1 }}>
+              Waiting for host to admit you...
+            </ThemedText>
+          </ThemedView>
+        )}
+
+        {/* Scheduled */}
         {isScheduled && (
           <ThemedView variant="secondary" rounded="xl" style={styles.noticeCard}>
             <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
@@ -110,6 +166,7 @@ export function PreJoinCard({ session, colors, joining, joined, onJoin, onEnterR
           </ThemedView>
         )}
 
+        {/* Ended */}
         {isEnded && (
           <ThemedView variant="secondary" rounded="xl" style={styles.noticeCard}>
             <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />

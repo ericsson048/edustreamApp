@@ -21,6 +21,7 @@ type SessionForm = {
   scheduled_at: string;
   duration_minutes: number;
   status: LiveSession['status'];
+  requires_permission: boolean;
 };
 
 const emptyForm: SessionForm = {
@@ -29,6 +30,7 @@ const emptyForm: SessionForm = {
   scheduled_at: '',
   duration_minutes: 60,
   status: 'SCHEDULED',
+  requires_permission: false,
 };
 
 function toDateTimeInput(value: string) {
@@ -54,6 +56,7 @@ export default function InstructorScheduleScreen() {
 
   const statusOptions: { value: LiveSession['status']; label: string }[] = [
     { value: 'SCHEDULED', label: 'Scheduled' },
+    { value: 'WAITING', label: 'Waiting' },
     { value: 'LIVE', label: 'Live' },
     { value: 'ENDED', label: 'Ended' },
   ];
@@ -129,6 +132,7 @@ export default function InstructorScheduleScreen() {
           scheduled_at: new Date(form.scheduled_at).toISOString(),
           duration_minutes: form.duration_minutes,
           status: form.status,
+          requires_permission: form.requires_permission,
         });
       } else {
         await scheduleService.createSession({
@@ -137,6 +141,7 @@ export default function InstructorScheduleScreen() {
           scheduled_at: new Date(form.scheduled_at).toISOString(),
           duration_minutes: form.duration_minutes,
           status: form.status,
+          requires_permission: form.requires_permission,
         });
       }
       setDialogVisible(false);
@@ -152,6 +157,7 @@ export default function InstructorScheduleScreen() {
 
   const statusConfig: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
     SCHEDULED: { icon: 'calendar-outline', color: colors.warning, label: 'SCHEDULED' },
+    WAITING: { icon: 'hourglass-outline', color: colors.warning, label: 'WAITING' },
     LIVE: { icon: 'radio-outline', color: colors.error, label: 'LIVE' },
     ENDED: { icon: 'checkmark-outline', color: colors.textMuted, label: 'ENDED' },
   };
@@ -342,6 +348,28 @@ export default function InstructorScheduleScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            <TouchableOpacity
+              onPress={() => setForm((prev) => ({ ...prev, requires_permission: !prev.requires_permission }))}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.md, paddingVertical: Spacing.sm }}
+              activeOpacity={0.7}
+            >
+              <View style={{ flex: 1, marginRight: Spacing.md }}>
+                <ThemedText variant="body" bold>Require permission to enter</ThemedText>
+                <ThemedText variant="caption" color="muted">Students must be admitted by the host</ThemedText>
+              </View>
+              <View style={{
+                width: 50, height: 28, borderRadius: 14,
+                backgroundColor: form.requires_permission ? colors.primary : colors.border,
+                justifyContent: 'center', paddingHorizontal: 3,
+              }}>
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11,
+                  backgroundColor: '#fff',
+                  alignSelf: form.requires_permission ? 'flex-end' : 'flex-start',
+                }} />
+              </View>
+            </TouchableOpacity>
 
             <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing['2xl'] }}>
               <TouchableOpacity

@@ -2,6 +2,22 @@ import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { apiClient } from './apiClient';
 
+const LINK_MAP: Record<string, string> = {
+  '/schedule': '/(tabs)/schedule',
+  '/messages': '/(tabs)/more/messages',
+  '/notifications': '/(tabs)/more/notifications',
+  '/courses': '/(tabs)/courses',
+  '/profile': '/(tabs)/more/profile',
+  '/settings': '/(tabs)/more/settings',
+  '/grades': '/(tabs)/more/grades',
+  '/live': '/(tabs)/schedule',
+};
+
+export function mapLinkToMobile(link: string): string {
+  if (link.startsWith('/live/')) return link;
+  return LINK_MAP[link] || link;
+}
+
 export async function registerForPushNotifications() {
   try {
     const Notifications = await import('expo-notifications');
@@ -54,7 +70,8 @@ export function useNotificationObserver() {
           const link = typeof data?.link === 'string' ? data.link : null;
           if (link) {
             import('expo-router').then(({ router }) => {
-              router.push(link as any);
+              const mobileLink = mapLinkToMobile(link);
+              router.push(mobileLink as any);
             }).catch(() => {});
           }
         });

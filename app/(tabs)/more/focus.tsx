@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Audio } from 'expo-audio';
 import { ThemedText } from '../../../src/components/ThemedText';
 import { ThemedView } from '../../../src/components/ThemedView';
 import { useTheme } from '../../../src/contexts/ThemeContext';
@@ -12,6 +13,20 @@ import { BorderRadius, FontSize, Spacing } from '../../../src/theme/colors';
 const WORK = 25 * 60;
 const BREAK = 5 * 60;
 
+const SOUNDS = [
+  { id: 'rain', name: 'Rain', icon: 'rainy-outline' as const },
+  { id: 'fire', name: 'Fire', icon: 'flame-outline' as const },
+  { id: 'cafe', name: 'Cafe', icon: 'cafe-outline' as const },
+  { id: 'lofi', name: 'Lo-Fi', icon: 'musical-notes-outline' as const },
+];
+
+const SOUND_URLS: Record<string, string> = {
+  rain: 'https://cdn.freesound.org/previews/531/531946_1648170-lq.mp3',
+  fire: 'https://cdn.freesound.org/previews/423/423291_10975223-lq.mp3',
+  cafe: 'https://cdn.freesound.org/previews/434/434895_12799143-lq.mp3',
+  lofi: 'https://cdn.freesound.org/previews/527/527400_11542807-lq.mp3',
+};
+
 export default function FocusScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -19,13 +34,53 @@ export default function FocusScreen() {
   const [running, setRunning] = useState(false);
   const [isWork, setIsWork] = useState(true);
   const [totalMinutes, setTotalMinutes] = useState(0);
+  const [activeSound, setActiveSound] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
     focusService.getStats().then((data) => {
       setTotalMinutes(data.total_focus_minutes ?? 0);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+      }
+    };
+  }, []);
+
+  const toggleAmbient = useCallback(async (id: string) => {
+    if (activeSound === id) {
+      if (soundRef.current) {
+        await soundRef.current.stopAsync().catch(() => {});
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+      setActiveSound(null);
+      return;
+    }
+
+    if (soundRef.current) {
+      await soundRef.current.stopAsync().catch(() => {});
+      await soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+    }
+
+    try {
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: SOUND_URLS[id] },
+        { isLooping: true, volume: 0.4, shouldPlay: true },
+      );
+      soundRef.current = sound;
+      setActiveSound(id);
+    } catch {
+      setActiveSound(null);
+    }
+  }, [activeSound]);
 
   const tick = useCallback(() => {
     setTimeLeft((prev) => {
@@ -102,13 +157,43 @@ export default function FocusScreen() {
           </View>
         </ThemedView>
 
-        <ThemedView variant="card" rounded="xl" elevated style={{ width: '100%', padding: Spacing.xl, marginTop: Spacing.xl, flexDirection: 'row', justifyContent: 'space-around' }}>
+        <ThemedView variant="card" rounded="xl" elevated style={{ width: '100%', padding: Spacing.xl, marginTop: Spacing.lg, flexDirection: 'row', justifyContent: 'space-around' }}>
           <View style={{ alignItems: 'center' }}>
             <View style={[styles.statIcon, { backgroundColor: colors.primaryLight }]}>
               <Ionicons name="time-outline" size={20} color={colors.primary} />
             </View>
             <ThemedText variant="h3" bold style={{ marginTop: Spacing.sm }}>{totalMinutes}</ThemedText>
             <ThemedText variant="caption" color="secondary">Total min</ThemedText>
+          </View>
+        </ThemedView>
+
+        <ThemedView variant="card" rounded="xl" elevated style={{ width: '100%', padding: Spacing.xl, marginTop: Spacing.lg }}>
+          <ThemedText variant="caption" bold color="secondary" style={{ textAlign: 'center', marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Ambient Sounds
+          </ThemedText>
+          <View style={styles.soundGrid}>
+            {SOUNDS.map((sound) => (
+              <TouchableOpacity
+                key={sound.id}
+                onPress={() => toggleAmbient(sound.id)}
+                style={[
+                  styles.soundBtn,
+                  {
+                    backgroundColor: activeSound === sound.id ? colors.primary + '20' : colors.surfaceSecondary,
+                    borderColor: activeSound === sound.id ? colors.primary + '40' : 'transparent',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={sound.icon as any}
+                  size={24}
+                  color={activeSound === sound.id ? colors.primary : colors.textSecondary}
+                />
+                <ThemedText variant="caption" style={{ color: activeSound === sound.id ? colors.primary : colors.textSecondary, marginTop: 4 }}>
+                  {sound.name}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
           </View>
         </ThemedView>
       </View>
@@ -148,5 +233,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  soundGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  soundBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    minWidth: 72,
   },
 });

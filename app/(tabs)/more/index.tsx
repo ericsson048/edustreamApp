@@ -18,7 +18,6 @@ const baseMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; rout
   { icon: 'timer-outline', label: 'Focus Room', route: 'focus', color: '#22C55E' },
   { icon: 'document-text-outline', label: 'Assignments', route: 'assignments', color: '#F59E0B' },
   { icon: 'bar-chart-outline', label: 'Grades', route: 'grades', color: '#EF4444' },
-  { icon: 'calendar-outline', label: 'Schedule', route: 'schedule', color: '#14B8A6' },
   { icon: 'chatbubbles-outline', label: 'Messages', route: 'messages', color: '#3B82F6' },
   { icon: 'people-outline', label: 'Community', route: 'community', color: '#06B6D4' },
   { icon: 'notifications-outline', label: 'Notifications', route: 'notifications', color: '#8B5CF6' },
@@ -27,12 +26,18 @@ const baseMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; rout
   { icon: 'settings-outline', label: 'Settings', route: 'settings', color: '#64748B' },
 ];
 
+const instructorMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; route: string; color: string }[] = [
+  { icon: 'videocam-outline', label: 'Live Sessions', route: '/instructor/schedule', color: '#EF4444' },
+  { icon: 'clipboard-outline', label: 'Assignments', route: '/instructor/assignments', color: '#F59E0B' },
+];
+
 export default function MoreScreen() {
   const { colors } = useTheme();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
 
   const menuItems = baseMenuItems;
+  const isInstructor = user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN';
 
   const handleLogout = async () => {
     await logout();
@@ -70,6 +75,31 @@ export default function MoreScreen() {
             </PressScale>
           ))}
         </View>
+
+        {isInstructor && (
+          <>
+            <ThemedText variant="caption" bold color="secondary" style={{ marginTop: Spacing['3xl'], marginBottom: Spacing.md }}>
+              Instructor Tools
+            </ThemedText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+              {instructorMenuItems.map((item) => (
+                <PressScale
+                  key={item.route}
+                  onPress={() => router.push(item.route as any)}
+                  activeOpacity={0.7}
+                  style={{ width: '46%' }}
+                >
+                  <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing.xl, alignItems: 'center' }}>
+                    <View style={[styles.iconWrap, { backgroundColor: colors.primaryLight }]}>
+                      <Ionicons name={item.icon} size={26} color={item.color} />
+                    </View>
+                    <ThemedText variant="caption" bold style={{ marginTop: Spacing.sm, textAlign: 'center' }}>{item.label}</ThemedText>
+                  </ThemedView>
+                </PressScale>
+              ))}
+            </View>
+          </>
+        )}
 
         <ThemedView variant="card" rounded="xl" elevated style={{ marginTop: Spacing['3xl'], padding: Spacing.xl, flexDirection: 'row', alignItems: 'center' }}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>

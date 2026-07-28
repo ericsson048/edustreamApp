@@ -8,6 +8,8 @@
     "userInterfaceStyle": "automatic",
     "scheme": "edustream",
     "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
       "backgroundColor": "#f8fafc"
     },
     "ios": {

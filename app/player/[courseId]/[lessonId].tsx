@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, TouchableOpacity, Linking, ActivityIndicator, StyleSheet, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ResizeMode, Video } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { ThemedText } from '../../../src/components/ThemedText';
 import { ThemedView } from '../../../src/components/ThemedView';
 import { useTheme } from '../../../src/contexts/ThemeContext';
@@ -40,7 +40,10 @@ export default function PlayerScreen() {
   const [allProgress, setAllProgress] = useState<Progress[]>([]);
   const [completing, setCompleting] = useState(false);
   const [certificateClaiming, setCertificateClaiming] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const videoPlayer = useVideoPlayer(
+    lesson?.video_file || lesson?.video || lesson?.video_url || '',
+    (player) => { player.loop = false; }
+  );
   const [hasCertificate, setHasCertificate] = useState(false);
   const [liveSessionMap, setLiveSessionMap] = useState<Record<string, string>>({});
   const [quizId, setQuizId] = useState<string | null>(null);
@@ -157,14 +160,13 @@ export default function PlayerScreen() {
             {/* Video player */}
             {hasVideo && (
               <View style={[styles.videoPlayer, { backgroundColor: '#000' }]}>
-                <Video
-                  ref={videoRef}
-                  source={{ uri: lesson.video_file || lesson.video || lesson.video_url || '' }}
-                  useNativeControls
-                  resizeMode={ResizeMode.CONTAIN}
-                  onPlaybackStatusUpdate={() => {}}
-                  style={{ width: '100%', height: '100%' }}
-                />
+                {hasVideo && (
+                  <VideoView
+                    player={videoPlayer}
+                    contentFit="contain"
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                )}
               </View>
             )}
 

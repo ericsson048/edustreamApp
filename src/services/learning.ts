@@ -1,8 +1,6 @@
-import { apiClient } from './apiClient';
+import { apiClient, BASE_URL } from './apiClient';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.204.215.26:8000/api/v1';
 
 export interface UserStats {
   courses_in_progress: number;

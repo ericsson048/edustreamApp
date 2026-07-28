@@ -29,6 +29,11 @@ export default function LiveSessionScreen() {
   const [joined, setJoined] = useState(false);
   const [inRoom, setInRoom] = useState(false);
   const [authToken, setAuthToken] = useState('');
+  const [selfParticipant, setSelfParticipant] = useState<{ user: string; role: string; is_admitted?: boolean } | null>(null);
+  const [admitted, setAdmitted] = useState(true);
+  const [waitingEntry, setWaitingEntry] = useState(false);
+
+  const isHost = selfParticipant?.role === 'HOST';
 
   useEffect(() => {
     if (!id) return;
@@ -54,8 +59,12 @@ export default function LiveSessionScreen() {
   const handleJoin = async () => {
     setJoining(true);
     try {
-      await scheduleService.joinSession(id);
-      setJoined(true);
+      const result = await scheduleService.joinSession(id);
+      setSelfParticipant(result);
+      setAdmitted(result.is_admitted !== false);
+      if (result.is_admitted !== false) {
+        setJoined(true);
+      }
     } catch {
       await alert({ title: 'Error', message: 'Could not join session. You must be enrolled in the course.' });
     } finally {
@@ -63,11 +72,36 @@ export default function LiveSessionScreen() {
     }
   };
 
+  const handleGoLive = async () => {
+    setJoining(true);
+    try {
+      await scheduleService.goLive(id);
+      setSession((prev) => prev ? { ...prev, status: 'LIVE' } : prev);
+      const result = await scheduleService.joinSession(id);
+      setSelfParticipant(result);
+      setJoined(true);
+    } catch {
+      await alert({ title: 'Error', message: 'Could not start the live session.' });
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const handleRequestEntry = async () => {
+    setWaitingEntry(true);
+    try {
+      await scheduleService.requestEntry(id);
+    } catch {
+      setWaitingEntry(false);
+      await alert({ title: 'Error', message: 'Could not send entry request.' });
+    }
+  };
+
   if (inRoom && session) {
-    return <RoomViewWrapper title={session.title} sessionId={id} wsHost={API_ORIGIN.replace(/^https?:\/\//, '')} authToken={authToken} onLeave={() => setInRoom(false)} />;
+    return <RoomViewWrapper title={session.title} sessionId={id} wsHost={API_ORIGIN.replace(/^https?:\/\//, '')} authToken={authToken} selfUserId={selfParticipant?.user} selfRole={selfParticipant?.role} onLeave={() => setInRoom(false)} />;
   }
 
-function RoomViewWrapper(props: { title: string; sessionId: string; wsHost: string; authToken: string; onLeave: () => void }) {
+function RoomViewWrapper(props: { title: string; sessionId: string; wsHost: string; authToken: string; selfUserId?: string; selfRole?: string; onLeave: () => void }) {
   const [Room, setRoom] = useState<React.ComponentType<any> | null>(null);
   const [loadError, setLoadError] = useState(false);
   const { colors } = useTheme();
@@ -119,8 +153,13 @@ function RoomViewWrapper(props: { title: string; sessionId: string; wsHost: stri
             colors={colors}
             joining={joining}
             joined={joined}
+            isHost={isHost}
+            admitted={admitted}
+            waitingEntry={waitingEntry}
             onJoin={handleJoin}
             onEnterRoom={() => setInRoom(true)}
+            onGoLive={handleGoLive}
+            onRequestEntry={handleRequestEntry}
           />
         ) : null}
       </View>

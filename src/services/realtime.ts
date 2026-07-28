@@ -1,8 +1,8 @@
+import { BASE_URL } from './apiClient';
 import * as SecureStore from 'expo-secure-store';
 
 function getApiOrigin() {
-  const baseURL = process.env.EXPO_PUBLIC_API_URL || 'http://10.204.215.26:8000/api/v1';
-  return new URL(baseURL).origin;
+  return new URL(BASE_URL).origin;
 }
 
 export async function buildWebSocketUrl(path: string) {

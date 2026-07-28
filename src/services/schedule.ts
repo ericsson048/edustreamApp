@@ -9,6 +9,7 @@ export interface LiveSession {
   scheduled_at: string;
   duration_minutes: number;
   status: string;
+  requires_permission?: boolean;
 }
 
 interface Paginated<T> {
@@ -26,14 +27,20 @@ export const scheduleService = {
     return data;
   },
   async joinSession(id: string) {
-    const { data } = await apiClient.post<{ status: string }>(`/live-sessions/${id}/join/`);
+    const { data } = await apiClient.post<{ user: string; role: string; id: string; is_admitted?: boolean }>(`/live-sessions/${id}/join/`);
     return data;
   },
-  async createSession(payload: { course: string; title: string; scheduled_at: string; duration_minutes: number; status?: string }) {
+  async goLive(id: string) {
+    await apiClient.post(`/live-sessions/${id}/go-live/`);
+  },
+  async requestEntry(id: string) {
+    await apiClient.post(`/live-sessions/${id}/request-entry/`);
+  },
+  async createSession(payload: { course: string; title: string; scheduled_at: string; duration_minutes: number; status?: string; requires_permission?: boolean }) {
     const { data } = await apiClient.post<LiveSession>('/live-sessions/', payload);
     return data;
   },
-  async updateSession(id: string, payload: { title?: string; scheduled_at?: string; duration_minutes?: number; status?: string }) {
+  async updateSession(id: string, payload: { title?: string; scheduled_at?: string; duration_minutes?: number; status?: string; requires_permission?: boolean }) {
     const { data } = await apiClient.patch<LiveSession>(`/live-sessions/${id}/`, payload);
     return data;
   },
