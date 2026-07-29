@@ -114,6 +114,7 @@ export default function InstructorScheduleScreen() {
       scheduled_at: toDateTimeInput(session.scheduled_at),
       duration_minutes: session.duration_minutes,
       status: session.status as LiveSession['status'],
+      requires_permission: session.requires_permission ?? false,
     });
     setDialogVisible(true);
   };

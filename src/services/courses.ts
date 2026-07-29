@@ -26,6 +26,8 @@ export interface LessonContent {
   duration_seconds: number;
   order: number;
   is_preview: boolean;
+  is_locked?: boolean;
+  locked_reason?: string;
   resources: Resource[];
   status: string;
   ai_generated: boolean;

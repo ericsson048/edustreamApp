@@ -87,6 +87,7 @@ export default function PlayerScreen() {
 
   const allLessons = course?.modules?.flatMap(m => m.lessons ?? []) ?? [];
   const currentLessonIndex = allLessons.findIndex(l => l.id === lessonId);
+  const isCurrentLocked = lesson?.is_locked ?? false;
   const prevLesson = currentLessonIndex > 0 ? allLessons[currentLessonIndex - 1] : null;
   const nextLesson = currentLessonIndex < allLessons.length - 1 ? allLessons[currentLessonIndex + 1] : null;
   const totalLessons = allLessons.length;
@@ -160,13 +161,22 @@ export default function PlayerScreen() {
             {/* Video player */}
             {hasVideo && (
               <View style={[styles.videoPlayer, { backgroundColor: '#000' }]}>
-                {hasVideo && (
+                {hasVideo && !isCurrentLocked && (
                   <VideoView
                     player={videoPlayer}
                     contentFit="contain"
                     style={{ width: '100%', height: '100%' }}
                   />
                 )}
+                {isCurrentLocked && (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name="lock-closed" size={48} color="#666" />
+                    <ThemedText bold style={{ color: '#999', marginTop: Spacing.md }}>Lesson locked</ThemedText>
+                    <ThemedText variant="caption" style={{ color: '#777', marginTop: 4, textAlign: 'center', paddingHorizontal: 32 }}>
+                      Complete the module quiz first to unlock this lesson.
+                    </ThemedText>
+                  </View>
+                )}          
               </View>
             )}
 
@@ -290,7 +300,14 @@ export default function PlayerScreen() {
               <NotesSection lessonId={lesson.id} colors={colors} />
 
               {/* Mark Complete button */}
-              {lesson.lesson_type !== 'LIVE' && (
+              {isCurrentLocked ? (
+                <ThemedView variant="secondary" rounded="xl" style={{ padding: Spacing.md, marginTop: Spacing.xl, flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="lock-closed" size={18} color={colors.textMuted} />
+                  <ThemedText variant="caption" color="muted" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+                    Complete the module quiz first to unlock this lesson.
+                  </ThemedText>
+                </ThemedView>
+              ) : lesson.lesson_type !== 'LIVE' ? (
                 isLessonCompleted ? (
                   <ThemedView variant="secondary" rounded="xl" style={{ padding: Spacing.md, marginTop: Spacing.xl, flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="checkmark-circle" size={18} color={colors.success} />
@@ -312,7 +329,7 @@ export default function PlayerScreen() {
                     )}
                   </TouchableOpacity>
                 )
-              )}
+              ) : null}
 
               {/* Prev / Next lesson navigation */}
               {(prevLesson || nextLesson) && (
