@@ -17,6 +17,8 @@ interface ToolbarProps {
   onToggleHand: () => void;
   onToggleReactions: () => void;
   onToggleChat: () => void;
+  onToggleEntries?: () => void;
+  pendingEntryCount?: number;
   onLeave: () => void;
   onEndSession?: () => void;
   onMuteAll?: () => void;
@@ -24,7 +26,7 @@ interface ToolbarProps {
 
 export function Toolbar({
   isMuted, isVideoOff, isScreenSharing, isHandRaised, showChat, isHost,
-  onToggleMute, onToggleVideo, onToggleScreenShare, onToggleHand, onToggleReactions, onToggleChat, onLeave, onEndSession, onMuteAll,
+  onToggleMute, onToggleVideo, onToggleScreenShare, onToggleHand, onToggleReactions, onToggleChat, onToggleEntries, pendingEntryCount, onLeave, onEndSession, onMuteAll,
 }: ToolbarProps) {
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -62,6 +64,16 @@ export function Toolbar({
       onPress: () => { onToggleChat(); setMenuOpen(false); },
     },
   ];
+
+  if (isHost && onToggleEntries) {
+    menuItems.push({
+      icon: 'people-outline',
+      label: `Entry requests${pendingEntryCount && pendingEntryCount > 0 ? ` (${pendingEntryCount})` : ''}`,
+      active: !!pendingEntryCount,
+      activeColor: '#FBBF24',
+      onPress: () => { onToggleEntries(); setMenuOpen(false); },
+    });
+  }
 
   if (isHost && onMuteAll) {
     menuItems.push({
@@ -134,7 +146,7 @@ export function Toolbar({
         {onToggleScreenShare && (
           <ToolBtn
             icon="desktop-outline"
-            active={isScreenSharing}
+            active={!!isScreenSharing}
             activeColor="#0ea5e9"
             onPress={onToggleScreenShare}
           />

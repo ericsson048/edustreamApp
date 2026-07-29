@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Animated, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Animated, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { mediaDevices, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } from 'react-native-webrtc';
@@ -88,6 +88,8 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   const [peerStatuses, setPeerStatuses] = useState<Record<string, string>>({});
   const [localStreamURL, setLocalStreamURL] = useState<string | null>(null);
   const [rtcConfig, setRtcConfig] = useState<RTCConfiguration>(DEFAULT_RTC_CONFIG);
+  const [pendingEntries, setPendingEntries] = useState<WebRTCParticipant[]>([]);
+  const [showEntriesPanel, setShowEntriesPanel] = useState(false);
   const mediaReadyRef = useRef(false);
 
   const bannerAnim = useRef(new Animated.Value(0)).current;
@@ -224,7 +226,18 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
               onLeave();
               return;
             }
-            setParticipants((prev) => prev.filter((p) => p.user !== payload.user_id));
+            setPendingEntries((prev) => prev.filter((p) => p.user !== payload.user_id));
+            return;
+          }
+
+          if (payload.kind === 'entry_requested' && payload.participant) {
+            if (selfRole === 'HOST' || selfRole === 'CO_HOST') {
+              const entry = payload.participant as WebRTCParticipant;
+              setPendingEntries((prev) => {
+                if (prev.some((p) => p.user === entry.user)) return prev;
+                return [...prev, entry];
+              });
+            }
             return;
           }
 
@@ -463,6 +476,52 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
     }
   }, [isScreenSharing]);
 
+  const isHostOrCohost = selfRole === 'HOST' || selfRole === 'CO_HOST';
+
+  // Poll pending entries
+  useEffect(() => {
+    if (!sessionId || !isHostOrCohost) return;
+    const apiBase = wsHost.includes('http') ? wsHost : `http://${wsHost}`;
+    const fetchPending = () => {
+      fetch(`${apiBase}/api/v1/live-sessions/${sessionId}/pending-entries/`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          const list = (Array.isArray(data) ? data : data.results ?? []) as WebRTCParticipant[];
+          setPendingEntries(list);
+        })
+        .catch(() => {});
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 5000);
+    return () => clearInterval(interval);
+  }, [sessionId, isHostOrCohost, authToken, wsHost]);
+
+  const handleGrantEntry = async (userId: string) => {
+    const apiBase = wsHost.includes('http') ? wsHost : `http://${wsHost}`;
+    try {
+      await fetch(`${apiBase}/api/v1/live-sessions/${sessionId}/grant-entry/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      setPendingEntries((prev) => prev.filter((p) => p.user !== userId));
+    } catch { /* noop */ }
+  };
+
+  const handleDenyEntry = async (userId: string) => {
+    const apiBase = wsHost.includes('http') ? wsHost : `http://${wsHost}`;
+    try {
+      await fetch(`${apiBase}/api/v1/live-sessions/${sessionId}/deny-entry/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      setPendingEntries((prev) => prev.filter((p) => p.user !== userId));
+    } catch { /* noop */ }
+  };
+
   const visibleParticipants = useMemo(() => {
     let list = [...participants];
     const self = list.find((p) => p.user === selfUserId);
@@ -479,6 +538,12 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
           <ThemedText bold style={styles.topTitle} numberOfLines={1}>{title}</ThemedText>
           <ThemedText style={styles.topSubtitle}>{visibleParticipants.length} participant(s)</ThemedText>
         </View>
+        {isHostOrCohost && pendingEntries.length > 0 && (
+          <TouchableOpacity onPress={() => setShowEntriesPanel((v) => !v)} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8, backgroundColor: 'rgba(251,191,36,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+            <Ionicons name="people" size={14} color="#FBBF24" />
+            <ThemedText style={{ color: '#FBBF24', fontSize: 12, fontWeight: '700', marginLeft: 4 }}>{pendingEntries.length}</ThemedText>
+          </TouchableOpacity>
+        )}
         <View style={styles.liveBadge}>
           <View style={styles.liveDot} />
           <ThemedText style={styles.liveText}>LIVE</ThemedText>
@@ -510,6 +575,30 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
       {/* Reactions */}
       <ReactionBar visible={showReactions} onSelect={handleReaction} onClose={() => setShowReactions(false)} />
 
+      {/* Pending entries panel */}
+      {showEntriesPanel && isHostOrCohost && pendingEntries.length > 0 && (
+        <View style={[styles.entriesPanel, { bottom: Platform.OS === 'ios' ? 100 : 80 }]}>
+          <ThemedText bold style={{ fontSize: 13, color: '#fff', marginBottom: 8 }}>Entry Requests</ThemedText>
+          <View style={{ maxHeight: 180 }}>
+            <ScrollView>
+              {pendingEntries.map((p) => (
+                <View key={p.user} style={styles.entryRow}>
+                  <ThemedText style={styles.entryName} numberOfLines={1}>{p.user_name || p.user.slice(0, 8)}</ThemedText>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity onPress={() => handleGrantEntry(p.user)} style={[styles.entryBtn, { backgroundColor: '#16a34a' }]}>
+                      <Ionicons name="checkmark" size={14} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDenyEntry(p.user)} style={[styles.entryBtn, { backgroundColor: '#dc2626' }]}>
+                      <Ionicons name="close" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
       {/* Toolbar */}
       <Toolbar
         isMuted={isMuted}
@@ -518,6 +607,8 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         isHandRaised={isHandRaised}
         showChat={showChat}
         isHost={selfRole === 'HOST' || selfRole === 'CO_HOST'}
+        onToggleEntries={isHostOrCohost ? () => setShowEntriesPanel((v) => !v) : undefined}
+        pendingEntryCount={pendingEntries.length}
         onToggleMute={() => setIsMuted((v) => !v)}
         onToggleVideo={() => setIsVideoOff((v) => !v)}
         onToggleScreenShare={toggleScreenShare}
@@ -542,6 +633,18 @@ import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0f172a' },
+  entriesPanel: {
+    position: 'absolute', right: 16, width: 240, zIndex: 50,
+    backgroundColor: '#1e293b', borderRadius: 12, padding: 10,
+    borderWidth: 1, borderColor: '#334155', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+  },
+  entryRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 6, paddingHorizontal: 4, borderRadius: 8,
+    borderBottomWidth: 1, borderBottomColor: '#334155',
+  },
+  entryName: { fontSize: 12, color: '#cbd5e1', flex: 1, marginRight: 8 },
+  entryBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingBottom: 8,

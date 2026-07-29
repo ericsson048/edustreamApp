@@ -1,4 +1,4 @@
-export type ParticipantRole = 'HOST' | 'PARTICIPANT';
+export type ParticipantRole = 'HOST' | 'CO_HOST' | 'PARTICIPANT';
 
 export interface RoomParticipant {
   user: string;
