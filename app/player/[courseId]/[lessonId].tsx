@@ -41,7 +41,7 @@ export default function PlayerScreen() {
   const [completing, setCompleting] = useState(false);
   const [certificateClaiming, setCertificateClaiming] = useState(false);
   const videoPlayer = useVideoPlayer(
-    lesson?.video_file || lesson?.video || lesson?.video_url || '',
+    lesson?.video || lesson?.video_file || lesson?.video_url || '',
     (player) => { player.loop = false; }
   );
   const [hasCertificate, setHasCertificate] = useState(false);
