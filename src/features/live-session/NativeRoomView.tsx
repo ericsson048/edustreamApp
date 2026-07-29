@@ -197,6 +197,37 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
             return;
           }
 
+          if (payload.kind === 'sent_to_waiting' && payload.participant) {
+            if (payload.participant.user === selfUserIdRef.current) {
+              onLeave();
+              return;
+            }
+            setParticipants((prev) => prev.filter((p) => p.user !== payload.participant?.user));
+            return;
+          }
+
+          if (payload.kind === 'cohost_added' && payload.participant) {
+            setParticipants((prev) => upsertParticipant(prev, payload.participant));
+            if (payload.participant.user === selfUserIdRef.current) {
+              setSelfRole('CO_HOST');
+            }
+            return;
+          }
+
+          if (payload.kind === 'entry_granted' && payload.participant) {
+            setParticipants((prev) => upsertParticipant(prev, payload.participant));
+            return;
+          }
+
+          if (payload.kind === 'entry_denied' && payload.user_id) {
+            if (payload.user_id === selfUserIdRef.current) {
+              onLeave();
+              return;
+            }
+            setParticipants((prev) => prev.filter((p) => p.user !== payload.user_id));
+            return;
+          }
+
           if (!selfUserIdRef.current || !sender_id || sender_id === selfUserIdRef.current) return;
           if (payload.target_user_id !== selfUserIdRef.current) return;
 
@@ -486,7 +517,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         isScreenSharing={isScreenSharing}
         isHandRaised={isHandRaised}
         showChat={showChat}
-        isHost={selfRole === 'HOST'}
+        isHost={selfRole === 'HOST' || selfRole === 'CO_HOST'}
         onToggleMute={() => setIsMuted((v) => !v)}
         onToggleVideo={() => setIsVideoOff((v) => !v)}
         onToggleScreenShare={toggleScreenShare}
@@ -494,14 +525,14 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         onToggleReactions={() => setShowReactions((v) => !v)}
         onToggleChat={() => setShowChat((v) => !v)}
         onLeave={onLeave}
-        onEndSession={selfRole === 'HOST' ? () => {
+        onEndSession={selfRole === 'HOST' || selfRole === 'CO_HOST' ? () => {
           fetch(`${wsHost.includes('http') ? wsHost : 'http://' + wsHost}/api/v1/live-sessions/${sessionId}/end/`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
           }).catch(() => {});
           onLeave();
         } : undefined}
-        onMuteAll={selfRole === 'HOST' ? () => sendSocketPayload({ kind: 'mute_all' }) : undefined}
+        onMuteAll={selfRole === 'HOST' || selfRole === 'CO_HOST' ? () => sendSocketPayload({ kind: 'mute_all' }) : undefined}
       />
     </KeyboardAvoidingView>
   );

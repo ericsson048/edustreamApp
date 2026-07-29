@@ -56,7 +56,6 @@ export default function InstructorScheduleScreen() {
 
   const statusOptions: { value: LiveSession['status']; label: string }[] = [
     { value: 'SCHEDULED', label: 'Scheduled' },
-    { value: 'WAITING', label: 'Waiting' },
     { value: 'LIVE', label: 'Live' },
     { value: 'ENDED', label: 'Ended' },
   ];
@@ -157,7 +156,6 @@ export default function InstructorScheduleScreen() {
 
   const statusConfig: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
     SCHEDULED: { icon: 'calendar-outline', color: colors.warning, label: 'SCHEDULED' },
-    WAITING: { icon: 'hourglass-outline', color: colors.warning, label: 'WAITING' },
     LIVE: { icon: 'radio-outline', color: colors.error, label: 'LIVE' },
     ENDED: { icon: 'checkmark-outline', color: colors.textMuted, label: 'ENDED' },
   };

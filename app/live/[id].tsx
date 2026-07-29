@@ -34,6 +34,7 @@ export default function LiveSessionScreen() {
   const [waitingEntry, setWaitingEntry] = useState(false);
 
   const isHost = selfParticipant?.role === 'HOST';
+  const isHostOrCohost = isHost || selfParticipant?.role === 'CO_HOST';
 
   useEffect(() => {
     if (!id) return;
@@ -75,10 +76,9 @@ export default function LiveSessionScreen() {
   const handleGoLive = async () => {
     setJoining(true);
     try {
-      await scheduleService.goLive(id);
-      setSession((prev) => prev ? { ...prev, status: 'LIVE' } : prev);
       const result = await scheduleService.joinSession(id);
       setSelfParticipant(result);
+      setSession((prev) => prev ? { ...prev, status: 'LIVE' } : prev);
       setJoined(true);
     } catch {
       await alert({ title: 'Error', message: 'Could not start the live session.' });
@@ -158,7 +158,6 @@ function RoomViewWrapper(props: { title: string; sessionId: string; wsHost: stri
             waitingEntry={waitingEntry}
             onJoin={handleJoin}
             onEnterRoom={() => setInRoom(true)}
-            onGoLive={handleGoLive}
             onRequestEntry={handleRequestEntry}
           />
         ) : null}

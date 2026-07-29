@@ -27,28 +27,27 @@ interface PreJoinCardProps {
   waitingEntry: boolean;
   onJoin: () => void;
   onEnterRoom: () => void;
-  onGoLive?: () => void;
   onRequestEntry?: () => void;
 }
 
-export function PreJoinCard({ session, colors, joining, joined, isHost, admitted, waitingEntry, onJoin, onEnterRoom, onGoLive, onRequestEntry }: PreJoinCardProps) {
+export function PreJoinCard({ session, colors, joining, joined, isHost, admitted, waitingEntry, onJoin, onEnterRoom, onRequestEntry }: PreJoinCardProps) {
   const status = (session.status as SessionStatus) || 'SCHEDULED';
   const cfg = STATUS_CONFIG[status];
   const statusColor = colors[cfg.colorKey];
 
   const isLive = status === 'LIVE';
-  const isWaiting = status === 'WAITING';
   const isScheduled = status === 'SCHEDULED';
   const isEnded = status === 'ENDED';
+  const canJoin = isLive || isScheduled;
 
   return (
     <View style={{ flex: 1, justifyContent: 'center' }}>
       <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing['2xl'], alignItems: 'center' }}>
         <View style={[styles.liveIcon, { backgroundColor: isLive ? colors.error + '20' : colors.primaryLight }]}>
           <Ionicons
-            name={isLive ? 'radio' : isWaiting ? 'hourglass' : isEnded ? 'checkmark-circle-outline' : 'calendar-outline'}
+            name={isLive ? 'radio' : isEnded ? 'checkmark-circle-outline' : 'calendar-outline'}
             size={44}
-            color={isLive ? colors.error : isWaiting ? colors.warning : colors.primary}
+            color={isLive ? colors.error : colors.primary}
           />
         </View>
         <ThemedText variant="h2" bold style={{ marginTop: Spacing.lg, textAlign: 'center' }}>
@@ -83,18 +82,8 @@ export function PreJoinCard({ session, colors, joining, joined, isHost, admitted
       </ThemedView>
 
       <View style={{ marginTop: Spacing['2xl'] }}>
-        {/* Host: WAITING → Go Live */}
-        {isWaiting && isHost && (
-          <TouchableOpacity onPress={onGoLive} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
-            <Ionicons name="radio" size={22} color="#fff" />
-            <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
-              Go Live
-            </ThemedText>
-          </TouchableOpacity>
-        )}
-
-        {/* Host: LIVE → Enter Room */}
-        {isLive && isHost && (
+        {/* Host: SCHEDULED or LIVE → Enter Room */}
+        {canJoin && isHost && (
           <TouchableOpacity onPress={joined ? onEnterRoom : onJoin} disabled={joining} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
             {joining ? (
               <ActivityIndicator color="#fff" />
@@ -109,8 +98,8 @@ export function PreJoinCard({ session, colors, joining, joined, isHost, admitted
           </TouchableOpacity>
         )}
 
-        {/* Student: LIVE + admitted → Join / Enter */}
-        {isLive && !isHost && admitted && (
+        {/* Student: can join + admitted → Join / Enter */}
+        {canJoin && !isHost && admitted && (
           <>
             {!joined ? (
               <TouchableOpacity onPress={onJoin} disabled={joining} style={[styles.joinBtn, { backgroundColor: colors.error }]}>
@@ -136,8 +125,8 @@ export function PreJoinCard({ session, colors, joining, joined, isHost, admitted
           </>
         )}
 
-        {/* Student: LIVE + not admitted + not waiting → Request entry */}
-        {isLive && !isHost && !admitted && !waitingEntry && (
+        {/* Student: can join + not admitted + not waiting → Request entry */}
+        {canJoin && !isHost && !admitted && !waitingEntry && (
           <TouchableOpacity onPress={onRequestEntry} style={[styles.joinBtn, { backgroundColor: colors.primary }]}>
             <Ionicons name="key-outline" size={22} color="#fff" />
             <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>

@@ -30,9 +30,6 @@ export const scheduleService = {
     const { data } = await apiClient.post<{ user: string; role: string; id: string; is_admitted?: boolean }>(`/live-sessions/${id}/join/`);
     return data;
   },
-  async goLive(id: string) {
-    await apiClient.post(`/live-sessions/${id}/go-live/`);
-  },
   async requestEntry(id: string) {
     await apiClient.post(`/live-sessions/${id}/request-entry/`);
   },
