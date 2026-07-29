@@ -62,7 +62,7 @@ export default function MoreScreen() {
           {menuItems.map((item) => (
             <PressScale
               key={item.route}
-              onPress={() => router.push('./' + item.route)}
+              onPress={() => router.push('/(tabs)/more/' + item.route)}
               activeOpacity={0.7}
               style={{ width: '46%' }}
             >
