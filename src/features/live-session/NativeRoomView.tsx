@@ -93,6 +93,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   const [remoteStreams, setRemoteStreams] = useState<Record<string, string>>({});
   const [peerStatuses, setPeerStatuses] = useState<Record<string, string>>({});
   const [localStreamURL, setLocalStreamURL] = useState<string | null>(null);
+  const [screenStreamURL, setScreenStreamURL] = useState<string | null>(null);
   const [rtcConfig, setRtcConfig] = useState<RTCConfiguration>(DEFAULT_RTC_CONFIG);
   const [pendingEntries, setPendingEntries] = useState<WebRTCParticipant[]>([]);
   const [showEntriesPanel, setShowEntriesPanel] = useState(false);
@@ -466,6 +467,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
       screenStreamRef.current?.getTracks().forEach((t: any) => t.stop());
       screenStreamRef.current = null;
       setIsScreenSharing(false);
+      setScreenStreamURL(null);
       peersRef.current.forEach((peer) => updatePeerTracks(peer));
       return;
     }
@@ -474,12 +476,14 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
       const stream = await (mediaDevices as any).getDisplayMedia();
       screenStreamRef.current = stream;
       setIsScreenSharing(true);
+      setScreenStreamURL(stream.toURL());
       peersRef.current.forEach((peer) => updatePeerTracks(peer));
       const track = stream.getVideoTracks()[0];
       if (track) {
         track.onended = () => {
           screenStreamRef.current = null;
           setIsScreenSharing(false);
+          setScreenStreamURL(null);
           peersRef.current.forEach((peer) => updatePeerTracks(peer));
         };
       }
@@ -575,6 +579,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         remoteStreams={remoteStreams}
         selfUserId={selfUserId}
         localStreamURL={localStreamURL}
+        screenStreamURL={screenStreamURL}
         isVideoOff={isVideoOff}
         isMuted={isMuted}
         isHandRaised={isHandRaised}

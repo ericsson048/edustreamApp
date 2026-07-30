@@ -19,6 +19,7 @@ interface VideoGridProps {
   remoteStreams: Record<string, string>;
   selfUserId: string;
   localStreamURL: string | null;
+  screenStreamURL: string | null;
   isVideoOff: boolean;
   isMuted: boolean;
   isHandRaised: boolean;
@@ -26,7 +27,7 @@ interface VideoGridProps {
 }
 
 export function VideoGrid({
-  participants, remoteStreams, selfUserId, localStreamURL,
+  participants, remoteStreams, selfUserId, localStreamURL, screenStreamURL,
   isVideoOff, isMuted, isHandRaised, peerStatuses,
 }: VideoGridProps) {
   const screenW = Dimensions.get('window').width;
@@ -43,7 +44,7 @@ export function VideoGrid({
     const filmstrip = participants.filter((p) => p.user !== screenSharer!.user);
     const filmstripTileW = 100;
     const mainStreamURL = isSelfSharing
-      ? (localStreamURL || undefined)
+      ? (screenStreamURL || undefined)
       : remoteStreams[screenSharer!.user];
 
     return (
@@ -96,7 +97,7 @@ export function VideoGrid({
   }
 
   const count = participants.length;
-  const cols = count <= 1 ? 1 : count <= 2 ? 2 : 2;
+  const cols = count <= 1 ? 1 : 2;
   const tileW = cols === 1 ? screenW - Spacing.xl * 2 : (screenW - Spacing.xl * 2 - gap) / 2;
 
   return (
