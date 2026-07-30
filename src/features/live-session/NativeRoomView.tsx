@@ -66,6 +66,12 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closedByUserRef = useRef(false);
   const selfUserIdRef = useRef('');
+  const rtcConfigRef = useRef<RTCConfiguration>(DEFAULT_RTC_CONFIG);
+  const selfRoleRef = useRef<ParticipantRole | undefined>(initialSelfRole as ParticipantRole | undefined);
+  const isMutedRef = useRef(false);
+  const isVideoOffRef = useRef(false);
+  const isScreenSharingRef = useRef(false);
+  const isHandRaisedRef = useRef(false);
   const localStreamRef = useRef<any>(null);
   const screenStreamRef = useRef<any>(null);
   const peersRef = useRef<Map<string, any>>(new Map());
@@ -95,6 +101,12 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   const bannerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => { selfUserIdRef.current = selfUserId; }, [selfUserId]);
+  useEffect(() => { selfRoleRef.current = selfRole; }, [selfRole]);
+  useEffect(() => { rtcConfigRef.current = rtcConfig; }, [rtcConfig]);
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+  useEffect(() => { isVideoOffRef.current = isVideoOff; }, [isVideoOff]);
+  useEffect(() => { isScreenSharingRef.current = isScreenSharing; }, [isScreenSharing]);
+  useEffect(() => { isHandRaisedRef.current = isHandRaised; }, [isHandRaised]);
 
   const sendSocketPayload = useCallback((payload: Record<string, unknown>) => {
     if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
@@ -130,7 +142,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
       socket.onopen = () => {
         reconnectAttempts = 0;
         setConnectionStatus('connected');
-        syncState({ is_mic_on: !isMuted, is_camera_on: !isVideoOff, is_screen_sharing: isScreenSharing, hand_raised: isHandRaised });
+        syncState({ is_mic_on: !isMutedRef.current, is_camera_on: !isVideoOffRef.current, is_screen_sharing: isScreenSharingRef.current, hand_raised: isHandRaisedRef.current });
         fetch(`${wsHost.includes('http') ? wsHost : 'http://' + wsHost}/api/v1/live-chat-messages/?session=${sessionId}`, {
           headers: { Authorization: `Bearer ${authToken}` },
         })
@@ -231,7 +243,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
           }
 
           if (payload.kind === 'entry_requested' && payload.participant) {
-            if (selfRole === 'HOST' || selfRole === 'CO_HOST') {
+            if (selfRoleRef.current === 'HOST' || selfRoleRef.current === 'CO_HOST') {
               const entry = payload.participant as WebRTCParticipant;
               setPendingEntries((prev) => {
                 if (prev.some((p) => p.user === entry.user)) return prev;
@@ -338,7 +350,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
     const existing = peersRef.current.get(remoteUserId);
     if (existing) return existing;
 
-    const peer = new RTCPeerConnection(rtcConfig);
+    const peer = new RTCPeerConnection(rtcConfigRef.current);
     setPeerStatuses((prev) => ({ ...prev, [remoteUserId]: 'connecting' }));
     updatePeerTracks(peer);
 
@@ -375,7 +387,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   };
 
   const createOfferFor = async (remoteUserId: string) => {
-    if (!selfUserId || offeredPeersRef.current.has(remoteUserId)) return;
+    if (!selfUserIdRef.current || offeredPeersRef.current.has(remoteUserId)) return;
     const peer = ensurePeer(remoteUserId);
     offeredPeersRef.current.add(remoteUserId);
     updatePeerTracks(peer);
