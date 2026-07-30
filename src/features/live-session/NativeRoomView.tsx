@@ -51,6 +51,9 @@ interface NativeRoomViewProps {
 function upsertParticipant(list: WebRTCParticipant[], p: WebRTCParticipant) {
   const idx = list.findIndex((item) => item.user === p.user);
   if (idx < 0) return [...list, p];
+  if (list[idx].id !== p.id) {
+    console.warn('[upsertParticipant] replacing', list[idx].id, 'with', p.id, 'for user', p.user);
+  }
   const next = [...list];
   next[idx] = { ...next[idx], ...p };
   return next;
@@ -440,6 +443,9 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         if (response.ok) {
           const data = await response.json();
           const fresh = data.results ?? data ?? [];
+          const seen = new Map<string, number>();
+          fresh.forEach((p: any) => { const c = (seen.get(p.user) || 0) + 1; seen.set(p.user, c); });
+          seen.forEach((count, user) => { if (count > 1) console.warn('[poll] backend returned', count, 'participants with user', user); });
           const freshUserIds = new Set(fresh.map((p: any) => p.user));
           setParticipants((prev) => {
             let next = [...prev];
