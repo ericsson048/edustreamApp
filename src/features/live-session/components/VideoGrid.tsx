@@ -35,6 +35,7 @@ export function VideoGrid({
 
   const selfParticipant = participants.find((p) => p.user === selfUserId);
   const remoteParticipants = participants.filter((p) => p.user !== selfUserId);
+  const visibleParticipants = selfParticipant ? [selfParticipant, ...remoteParticipants] : remoteParticipants;
 
   const screenSharer = participants.find((p) => p.is_screen_sharing);
   const isPresentationMode = !!screenSharer;
@@ -42,14 +43,15 @@ export function VideoGrid({
 
   if (isPresentationMode) {
     const filmstrip = participants.filter((p) => p.user !== screenSharer!.user);
-    const filmstripTileW = 100;
     const mainStreamURL = isSelfSharing
       ? (screenStreamURL || undefined)
       : remoteStreams[screenSharer!.user];
 
+    const gridCount = filmstrip.length + (selfParticipant ? 1 : 0);
+    const tileW = gridCount <= 1 ? screenW - Spacing.xl * 2 : (screenW - Spacing.xl * 2 - gap) / 2;
+
     return (
       <View style={styles.presentationContainer}>
-        {/* Main large view */}
         <View style={styles.presentationMain}>
           <VideoTile
             streamURL={mainStreamURL}
@@ -69,14 +71,27 @@ export function VideoGrid({
           </View>
         </View>
 
-        {/* Filmstrip at bottom */}
         {filmstrip.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filmstrip} contentContainerStyle={styles.filmstripContent}>
+          <View style={styles.presentationGrid}>
+            {selfParticipant && (
+              <View style={[styles.gridTile, { width: tileW }]}>
+                <VideoTile
+                  streamURL={localStreamURL || undefined}
+                  userName={selfParticipant.user_name || 'You'}
+                  isSelf
+                  isVideoOff={isVideoOff}
+                  isMuted={isMuted}
+                  isHandRaised={isHandRaised}
+                  peerStatus="connected"
+                />
+              </View>
+            )}
+
             {filmstrip.map((p) => {
               const streamURL = p.user === selfUserId ? (localStreamURL || undefined) : remoteStreams[p.user];
               const isSelf = p.user === selfUserId;
               return (
-                <View key={p.user} style={[styles.filmstripTile, { width: filmstripTileW }]}>
+                <View key={p.user} style={[styles.gridTile, { width: tileW }]}>
                   <VideoTile
                     streamURL={streamURL}
                     userName={isSelf ? 'You' : (p.user_name || 'Participant')}
@@ -85,56 +100,43 @@ export function VideoGrid({
                     isMuted={isSelf ? isMuted : !p.is_mic_on}
                     isHandRaised={isSelf ? isHandRaised : !!p.hand_raised}
                     peerStatus={isSelf ? 'connected' : (peerStatuses[p.user] || 'idle')}
-                    filmstrip
                   />
                 </View>
               );
             })}
-          </ScrollView>
+          </View>
         )}
       </View>
     );
   }
 
-  const count = participants.length;
-  const cols = count <= 1 ? 1 : 2;
-  const tileW = cols === 1 ? screenW - Spacing.xl * 2 : (screenW - Spacing.xl * 2 - gap) / 2;
+  const count = visibleParticipants.length;
+  const tileW = count <= 1 ? screenW - Spacing.xl * 2 : (screenW - Spacing.xl * 2 - gap) / 2;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      {selfParticipant && (
-        <View style={[styles.selfTile, { width: tileW }]}>
-          <VideoTile
-            streamURL={localStreamURL || undefined}
-            userName={selfParticipant.user_name || 'You'}
-            isSelf
-            isVideoOff={isVideoOff}
-            isMuted={isMuted}
-            isHandRaised={isHandRaised}
-            peerStatus="connected"
-          />
-        </View>
-      )}
-
-      {remoteParticipants.length > 0 && (
+      {count > 0 ? (
         <View style={styles.grid}>
-          {remoteParticipants.map((p) => (
-            <View key={p.user} style={[styles.gridTile, { width: tileW }]}>
-              <VideoTile
-                streamURL={remoteStreams[p.user]}
-                userName={p.user_name || 'Participant'}
-                isSelf={false}
-                isVideoOff={!p.is_camera_on}
-                isMuted={!p.is_mic_on}
-                isHandRaised={!!p.hand_raised}
-                peerStatus={peerStatuses[p.user] || 'idle'}
-              />
-            </View>
-          ))}
-        </View>
-      )}
+          {visibleParticipants.map((p) => {
+            const isSelf = p.user === selfUserId;
+            const streamURL = isSelf ? (localStreamURL || undefined) : remoteStreams[p.user];
 
-      {count <= 1 && (
+            return (
+              <View key={p.user} style={[styles.gridTile, { width: tileW }]}>
+                <VideoTile
+                  streamURL={streamURL}
+                  userName={isSelf ? (selfParticipant?.user_name || 'You') : (p.user_name || 'Participant')}
+                  isSelf={isSelf}
+                  isVideoOff={isSelf ? isVideoOff : !p.is_camera_on}
+                  isMuted={isSelf ? isMuted : !p.is_mic_on}
+                  isHandRaised={isSelf ? isHandRaised : !!p.hand_raised}
+                  peerStatus={isSelf ? 'connected' : (peerStatuses[p.user] || 'idle')}
+                />
+              </View>
+            );
+          })}
+        </View>
+      ) : (
         <View style={styles.waiting}>
           <VideoTile streamURL={undefined} userName="" isSelf isVideoOff isMuted isHandRaised={false} peerStatus="connected" />
         </View>
@@ -146,12 +148,23 @@ export function VideoGrid({
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: Spacing.md },
-  selfTile: { alignSelf: 'center', marginBottom: Spacing.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridTile: {},
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: Spacing.sm,
+  },
+  gridTile: { marginBottom: Spacing.xs },
   waiting: { alignItems: 'center', marginTop: Spacing['3xl'] },
   presentationContainer: { flex: 1, padding: Spacing.md },
   presentationMain: { flex: 1, position: 'relative' },
+  presentationGrid: {
+    marginTop: Spacing.md,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: Spacing.sm,
+  },
   presenterBadge: {
     position: 'absolute', top: 8, left: 8,
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -159,7 +172,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 4,
   },
   presenterText: { color: '#60a5fa', fontSize: 11, fontWeight: '600' },
-  filmstrip: { marginTop: Spacing.sm, maxHeight: 110 },
-  filmstripContent: { gap: Spacing.xs, paddingRight: Spacing.md },
-  filmstripTile: { height: 100 },
 });
