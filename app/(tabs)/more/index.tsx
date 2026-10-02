@@ -29,6 +29,7 @@ const baseMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; rout
 const instructorMenuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; route: string; color: string }[] = [
   { icon: 'videocam-outline', label: 'Live Sessions', route: '/instructor/schedule', color: '#EF4444' },
   { icon: 'clipboard-outline', label: 'Assignments', route: '/instructor/assignments', color: '#F59E0B' },
+  { icon: 'ribbon-outline', label: 'Suivi universitaire', route: '/instructor/suivi', color: '#6366F1' },
 ];
 
 export default function MoreScreen() {

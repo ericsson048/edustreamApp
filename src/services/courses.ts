@@ -70,6 +70,10 @@ export interface Course {
   instructor: string;
   instructor_name?: string;
   is_published: boolean;
+  course_type: 'REGULAR' | 'MARGINAL';
+  start_date: string | null;
+  end_date: string | null;
+  credits: number;
   average_rating?: number | null;
   enrollments_count?: number;
   learning_objectives: string[];
@@ -91,6 +95,8 @@ export interface Enrollment {
   student: string;
   course: string;
   course_title: string;
+  invitation?: string | null;
+  invitation_code?: string | null;
   thumbnail?: string;
   instructor_name?: string;
   is_active: boolean;
@@ -114,9 +120,30 @@ interface Paginated<T> {
   results: T[];
 }
 
+export interface CourseInvitation {
+  id: string;
+  course: string;
+  course_title?: string;
+  code: string;
+  max_uses: number;
+  used_count: number;
+  expires_at: string | null;
+  is_active: boolean;
+  created_by: string;
+  created_by_name?: string;
+  created_at: string;
+}
+
 export const enrollmentService = {
   async createEnrollment(courseId: string) {
     const { data } = await apiClient.post<Enrollment>('/enrollments/', { course: courseId });
+    return data;
+  },
+  async enrollWithInvitation(courseId: string, invitationCode: string) {
+    const { data } = await apiClient.post<Enrollment>('/enrollments/', {
+      course: courseId,
+      invitation_code: invitationCode,
+    });
     return data;
   },
   async listEnrollments(params?: Record<string, unknown>) {
@@ -153,6 +180,17 @@ export const courseService = {
   async claimCertificate(courseId: string) {
     const { data } = await apiClient.post<Certificate>('/certificates/claim/', { course: courseId });
     return data;
+  },
+  async listCourseInvitations(courseId: string) {
+    const { data } = await apiClient.get<Paginated<CourseInvitation>>(`/courses/${courseId}/invitations/`);
+    return data.results ?? [];
+  },
+  async createCourseInvitation(courseId: string, payload: { max_uses?: number; expires_at?: string | null }) {
+    const { data } = await apiClient.post<CourseInvitation>(`/courses/${courseId}/invitations/`, payload);
+    return data;
+  },
+  async revokeCourseInvitation(courseId: string, invitationId: string) {
+    await apiClient.post(`/courses/${courseId}/invitations/revoke/`, { invitation_id: invitationId });
   },
 };
 

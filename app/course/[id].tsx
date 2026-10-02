@@ -21,7 +21,7 @@ const typeIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function CourseDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, invite } = useLocalSearchParams<{ id: string; invite?: string }>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { alert } = useAlert();
@@ -29,6 +29,13 @@ export default function CourseDetailScreen() {
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+
+  const [inviteCode, setInviteCode] = useState((invite as string) || '');
+  const [joiningCourse, setJoiningCourse] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [joinSuccess, setJoinSuccess] = useState(false);
+
+  const isMarginal = course?.course_type === 'MARGINAL';
 
   useEffect(() => {
     if (!id) return;
@@ -59,6 +66,21 @@ export default function CourseDetailScreen() {
       await alert({ title: 'Error', message: 'Could not enroll. Please try again.' });
     } finally {
       setEnrolling(false);
+    }
+  };
+
+  const joinWithInviteCode = async () => {
+    if (!inviteCode.trim() || !id) return;
+    setJoiningCourse(true);
+    setInviteError('');
+    try {
+      const enrolled = await enrollmentService.enrollWithInvitation(id, inviteCode.trim());
+      setEnrollment(enrolled);
+      setJoinSuccess(true);
+    } catch (err: any) {
+      setInviteError(err?.response?.data?.detail || "Code d'invitation invalide.");
+    } finally {
+      setJoiningCourse(false);
     }
   };
 
@@ -100,6 +122,20 @@ export default function CourseDetailScreen() {
               </View>
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md }}>
+                {isMarginal && (
+                  <View style={[styles.tag, { backgroundColor: colors.warning + '22' }]}>
+                    <Ionicons name="ribbon-outline" size={12} color={colors.warning} />
+                    <ThemedText variant="label" style={{ color: colors.warning, marginLeft: 4 }}>Cours marginal</ThemedText>
+                  </View>
+                )}
+                {isMarginal && course.start_date && course.end_date && (
+                  <View style={[styles.tag, { backgroundColor: colors.surfaceSecondary }]}>
+                    <Ionicons name="calendar-outline" size={12} color={colors.textSecondary} />
+                    <ThemedText variant="label" color="secondary" style={{ marginLeft: 4 }}>
+                      {course.start_date} → {course.end_date}
+                    </ThemedText>
+                  </View>
+                )}
                 <View style={[styles.tag, { backgroundColor: colors.primaryLight }]}>
                   <Ionicons name="stats-chart-outline" size={12} color={colors.primary} />
                   <ThemedText variant="label" style={{ color: colors.primary, marginLeft: 4 }}>{course.level}</ThemedText>
@@ -136,26 +172,96 @@ export default function CourseDetailScreen() {
               </View>
 
               {/* Enrollment CTA */}
-              <TouchableOpacity
-                onPress={enrollment ? () => router.push(`/player/${id}/${course?.modules?.[0]?.lessons?.[0]?.id || ''}`) : handleEnroll}
-                disabled={enrolling}
-                style={[styles.ctaBtn, { backgroundColor: enrollment ? colors.primary : parseFloat(course.price || '0') > 0 ? colors.success : colors.success }]}
-              >
-                {enrolling ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons
-                      name={enrollment ? 'play-circle-outline' : 'cart-outline'}
-                      size={22}
-                      color="#fff"
-                    />
+              {enrollment ? (
+                <>
+                  <TouchableOpacity
+                    onPress={() => router.push(`/player/${id}/${course?.modules?.[0]?.lessons?.[0]?.id || ''}`)}
+                    disabled={enrolling}
+                    style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
+                  >
+                    <Ionicons name="play-circle-outline" size={22} color="#fff" />
                     <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
-                      {enrollment ? 'Continue Learning' : parseFloat(course.price || '0') > 0 ? `Enroll for $${parseFloat(course.price).toFixed(0)}` : 'Enroll for Free'}
+                      Continue Learning
                     </ThemedText>
-                  </>
-                )}
-              </TouchableOpacity>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: '/course/suivi', params: { id } })}
+                    style={[styles.ctaBtn, { backgroundColor: colors.primaryLight }]}
+                  >
+                    <Ionicons name="ribbon-outline" size={20} color={colors.primary} />
+                    <ThemedText bold style={{ color: colors.primary, marginLeft: Spacing.sm, fontSize: 15 }}>
+                      Mon suivi universitaire
+                    </ThemedText>
+                  </TouchableOpacity>
+                </>
+              ) : isMarginal ? (
+                <ThemedView variant="secondary" rounded="xl" style={{ padding: Spacing.lg, marginTop: Spacing['3xl'] }}>
+                  {joinSuccess ? (
+                    <ThemedText variant="body" bold style={{ color: colors.success, textAlign: 'center' }}>
+                      Inscrit avec succès !
+                      {course.modules?.[0]?.lessons?.[0] && (
+                        <ThemedText variant="body" bold style={{ color: colors.primary }}
+                          onPress={() => router.push(`/player/${id}/${course.modules?.[0]?.lessons?.[0]?.id}`)}>
+                          {' '}Commencer →
+                        </ThemedText>
+                      )}
+                    </ThemedText>
+                  ) : (
+                    <>
+                      <ThemedText variant="body" bold>Rejoindre avec un code d&apos;invitation</ThemedText>
+                      <TextInput
+                        value={inviteCode}
+                        onChangeText={setInviteCode}
+                        placeholder="Ex : EDU-AB12CD"
+                        placeholderTextColor={colors.text + '66'}
+                        autoCapitalize="characters"
+                        style={{
+                          borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: Spacing.md,
+                          color: colors.text, backgroundColor: colors.background, marginTop: Spacing.md,
+                          fontFamily: 'monospace', fontSize: 16,
+                        }}
+                      />
+                      {inviteError ? (
+                        <ThemedText variant="caption" style={{ color: colors.error, marginTop: Spacing.sm }}>{inviteError}</ThemedText>
+                      ) : null}
+                      <TouchableOpacity
+                        onPress={joinWithInviteCode}
+                        disabled={joiningCourse || !inviteCode.trim()}
+                        style={[{
+                          backgroundColor: colors.warning, padding: Spacing.md, borderRadius: BorderRadius.full,
+                          marginTop: Spacing.md, opacity: joiningCourse || !inviteCode.trim() ? 0.5 : 1,
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                        }]}
+                      >
+                        {joiningCourse ? <ActivityIndicator color="#fff" /> : <Ionicons name="log-in-outline" size={18} color="#fff" />}
+                        <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm }}>
+                          {joiningCourse ? 'Inscription...' : 'Rejoindre'}
+                        </ThemedText>
+                      </TouchableOpacity>
+                      <ThemedText variant="caption" color="secondary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
+                        Demandez le code à votre professeur.
+                      </ThemedText>
+                    </>
+                  )}
+                </ThemedView>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleEnroll}
+                  disabled={enrolling}
+                  style={[styles.ctaBtn, { backgroundColor: parseFloat(course.price || '0') > 0 ? colors.success : colors.success }]}
+                >
+                  {enrolling ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="cart-outline" size={22} color="#fff" />
+                      <ThemedText bold style={{ color: '#fff', marginLeft: Spacing.sm, fontSize: 16 }}>
+                        {parseFloat(course.price || '0') > 0 ? `Enroll for $${parseFloat(course.price).toFixed(0)}` : 'Enroll for Free'}
+                      </ThemedText>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
 
               {/* Description */}
               <ThemedView variant="card" rounded="xl" elevated style={{ padding: Spacing.lg, marginTop: Spacing.xl }}>

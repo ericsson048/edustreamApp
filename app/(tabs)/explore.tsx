@@ -324,6 +324,26 @@ export default function ExploreScreen() {
                           </ThemedText>
                         </View>
                       )}
+                      {c.course_type === "MARGINAL" && (
+                        <View
+                          style={[
+                            styles.badge,
+                            { backgroundColor: colors.warning + "22" },
+                          ]}
+                        >
+                          <Ionicons
+                            name="ribbon-outline"
+                            size={10}
+                            color={colors.warning}
+                          />
+                          <ThemedText
+                            variant="label"
+                            style={{ color: colors.warning, marginLeft: 4 }}
+                          >
+                            Marginal
+                          </ThemedText>
+                        </View>
+                      )}
                       <View
                         style={[
                           styles.badge,
