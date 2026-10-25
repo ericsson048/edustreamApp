@@ -37,6 +37,26 @@ export function getApiBaseUrl() {
   return apiBaseUrl;
 }
 
+export async function testApiServerConnection(value: string) {
+  const baseUrl = normalizeApiBaseUrl(value);
+  let response;
+  try {
+    response = await axios.get(`${baseUrl}/auth/me/`, { timeout: 5000, validateStatus: () => true });
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      throw new Error('Le serveur ne répond pas. Vérifiez l’adresse et réessayez.');
+    }
+    if (axios.isAxiosError(error) && !error.response) {
+      throw new Error('Connexion impossible. Vérifiez l’adresse IP, le port 8100, le Wi-Fi et le pare-feu.');
+    }
+    throw error;
+  }
+
+  if (response.status !== 401 && response.status !== 403) {
+    throw new Error(`Le serveur a répondu avec le code ${response.status}. Vérifiez l’adresse de l’API.`);
+  }
+}
+
 export function initializeApiBaseUrl() {
   if (!initialization) {
     initialization = AsyncStorage.getItem(API_BASE_URL_STORAGE_KEY).then((storedUrl) => {
