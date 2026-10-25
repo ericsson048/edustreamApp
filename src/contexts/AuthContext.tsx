@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const changePassword = async (old_password: string, new_password: string) => {
-    await authService.changePassword({ old_password, new_password });
+    await authService.changePassword({ current_password: old_password, new_password });
   };
 
   return (

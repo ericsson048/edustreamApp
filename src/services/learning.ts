@@ -1,6 +1,4 @@
-import { apiClient, BASE_URL } from './apiClient';
-import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
+import { apiClient } from './apiClient';
 
 export interface UserStats {
   courses_in_progress: number;
@@ -145,14 +143,10 @@ export const learningService = {
     return data;
   },
   async uploadFile(fileUri: string, fileName: string, fileType: string): Promise<string> {
-    const token = await SecureStore.getItemAsync('edustream_access_token');
     const form = new FormData();
     form.append('file', { uri: fileUri, name: fileName, type: fileType } as any);
-    const { data } = await axios.post<{ url: string }>(`${BASE_URL}/upload/`, form, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${token}`,
-      },
+    const { data } = await apiClient.post<{ url: string }>('/upload/', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return data.url;
   },

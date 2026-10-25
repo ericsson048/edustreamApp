@@ -88,6 +88,9 @@ export default function LoginScreen() {
           >
             {loading ? <ActivityIndicator color="#fff" /> : <ThemedText bold style={{ color: '#fff', fontSize: FontSize.lg }}>Sign In</ThemedText>}
           </PressScale>
+          <PressScale onPress={() => router.push('/(auth)/server-settings')} style={{ marginTop: Spacing.lg }}>
+            <ThemedText variant="caption" style={{ color: colors.primary, textAlign: 'center' }}>Configurer l’adresse du serveur</ThemedText>
+          </PressScale>
         </View>
 
         <View style={styles.bottom}>

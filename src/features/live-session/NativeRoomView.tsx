@@ -41,7 +41,7 @@ interface ChatMessage {
 interface NativeRoomViewProps {
   title: string;
   sessionId: string;
-  wsHost: string;
+  apiOrigin: string;
   authToken: string;
   selfUserId?: string;
   selfRole?: string;
@@ -63,7 +63,7 @@ function shouldInitiate(selfUserId: string, remoteUserId: string) {
   return selfUserId.localeCompare(remoteUserId) < 0;
 }
 
-export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId: initialSelfUserId, selfRole: initialSelfRole, onLeave }: NativeRoomViewProps) {
+export function NativeRoomView({ title, sessionId, apiOrigin, authToken, selfUserId: initialSelfUserId, selfRole: initialSelfRole, onLeave }: NativeRoomViewProps) {
   const insets = useSafeAreaInsets();
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,6 +103,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   const mediaReadyRef = useRef(false);
 
   const bannerAnim = useRef(new Animated.Value(0)).current;
+  const apiBase = `${apiOrigin}/api/v1`;
 
   useEffect(() => { selfUserIdRef.current = selfUserId; }, [selfUserId]);
   useEffect(() => { selfRoleRef.current = selfRole; }, [selfRole]);
@@ -132,14 +133,14 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
 
   // WebSocket
   useEffect(() => {
-    if (!sessionId || !wsHost || !authToken) return;
+    if (!sessionId || !apiOrigin || !authToken) return;
     let reconnectAttempts = 0;
 
     const openSocket = () => {
       if (closedByUserRef.current) return;
-      const protocol = wsHost.includes('localhost') || wsHost.includes('10.') ? 'ws' : 'wss';
-      const url = `${protocol}://${wsHost}/ws/live/${sessionId}/?token=${authToken}`;
-      const socket = new WebSocket(url);
+      const protocol = apiOrigin.startsWith('https://') ? 'wss' : 'ws';
+      const url = `${protocol}://${apiOrigin.replace(/^https?:\/\//, '')}/ws/live/${sessionId}/`;
+      const socket = new WebSocket(url, [`edustream.jwt.${authToken}`]);
       socketRef.current = socket;
       setConnectionStatus('connecting');
 
@@ -147,7 +148,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         reconnectAttempts = 0;
         setConnectionStatus('connected');
         syncState({ is_mic_on: !isMutedRef.current, is_camera_on: !isVideoOffRef.current, is_screen_sharing: isScreenSharingRef.current, hand_raised: isHandRaisedRef.current });
-        fetch(`${wsHost.includes('http') ? wsHost : 'http://' + wsHost}/api/v1/live-chat-messages/?session=${sessionId}`, {
+        fetch(`${apiBase}/live-chat-messages/?session=${sessionId}`, {
           headers: { Authorization: `Bearer ${authToken}` },
         })
           .then((r) => r.json())
@@ -299,7 +300,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
       socketRef.current?.close();
       peersRef.current.forEach((_, uid) => cleanupPeer(uid));
     };
-  }, [sessionId, wsHost, authToken]);
+  }, [sessionId, apiOrigin, authToken]);
 
   useEffect(() => { closedByUserRef.current = false; }, [sessionId]);
 
@@ -410,7 +411,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
 
   useEffect(() => {
     initLocalMedia();
-    fetch(`${wsHost.includes('http') ? wsHost : 'http://' + wsHost}/api/v1/live-sessions/ice-config/`, {
+    fetch(`${apiBase}/live-sessions/ice-config/`, {
       headers: { Authorization: `Bearer ${authToken}` },
     })
       .then((r) => r.json())
@@ -437,7 +438,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
     if (!sessionId) return;
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`${wsHost.includes('http') ? wsHost : 'http://' + wsHost}/api/v1/live-participants/?session=${sessionId}`, {
+        const response = await fetch(`${apiBase}/live-participants/?session=${sessionId}`, {
           headers: { Authorization: `Bearer ${authToken}` },
         });
         if (response.ok) {
@@ -503,9 +504,8 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   // Poll pending entries
   useEffect(() => {
     if (!sessionId || !isHostOrCohost) return;
-    const apiBase = wsHost.includes('http') ? wsHost : `http://${wsHost}`;
     const fetchPending = () => {
-      fetch(`${apiBase}/api/v1/live-sessions/${sessionId}/pending-entries/`, {
+      fetch(`${apiBase}/live-sessions/${sessionId}/pending-entries/`, {
         headers: { Authorization: `Bearer ${authToken}` },
       })
         .then((r) => r.json())
@@ -518,12 +518,11 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
     fetchPending();
     const interval = setInterval(fetchPending, 5000);
     return () => clearInterval(interval);
-  }, [sessionId, isHostOrCohost, authToken, wsHost]);
+  }, [sessionId, isHostOrCohost, authToken, apiBase]);
 
   const handleGrantEntry = async (userId: string) => {
-    const apiBase = wsHost.includes('http') ? wsHost : `http://${wsHost}`;
     try {
-      await fetch(`${apiBase}/api/v1/live-sessions/${sessionId}/grant-entry/`, {
+      await fetch(`${apiBase}/live-sessions/${sessionId}/grant-entry/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
@@ -533,9 +532,8 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
   };
 
   const handleDenyEntry = async (userId: string) => {
-    const apiBase = wsHost.includes('http') ? wsHost : `http://${wsHost}`;
     try {
-      await fetch(`${apiBase}/api/v1/live-sessions/${sessionId}/deny-entry/`, {
+      await fetch(`${apiBase}/live-sessions/${sessionId}/deny-entry/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
@@ -640,7 +638,7 @@ export function NativeRoomView({ title, sessionId, wsHost, authToken, selfUserId
         onToggleChat={() => setShowChat((v) => !v)}
         onLeave={onLeave}
         onEndSession={selfRole === 'HOST' || selfRole === 'CO_HOST' ? () => {
-          fetch(`${wsHost.includes('http') ? wsHost : 'http://' + wsHost}/api/v1/live-sessions/${sessionId}/end/`, {
+          fetch(`${apiBase}/live-sessions/${sessionId}/end/`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
           }).catch(() => {});

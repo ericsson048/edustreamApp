@@ -10,14 +10,13 @@ import { scheduleService, type LiveSession } from '../../src/services/schedule';
 import { Spacing } from '../../src/theme/colors';
 import { SkeletonLoader } from '../../src/components/SkeletonLoader';
 import { useAlert } from '../../src/components/AlertDialog';
-import { BASE_URL } from '../../src/services/apiClient';
+import { getApiBaseUrl } from '../../src/services/apiClient';
 import { PreJoinCard } from '../../src/features/live-session/PreJoinCard';
 import { liveSessionStyles as styles } from '../../src/features/live-session/styles';
 
-const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || BASE_URL).replace('/api/v1', '');
 const AUTH_TOKEN_KEY = 'edustream_access_token';
 
-function RoomViewWrapper(props: { title: string; sessionId: string; wsHost: string; authToken: string; selfUserId?: string; selfRole?: string; onLeave: () => void }) {
+function RoomViewWrapper(props: { title: string; sessionId: string; apiOrigin: string; authToken: string; selfUserId?: string; selfRole?: string; onLeave: () => void }) {
   const [Room, setRoom] = useState<React.ComponentType<any> | null>(null);
   const [loadError, setLoadError] = useState(false);
   const { colors } = useTheme();
@@ -130,7 +129,8 @@ export default function LiveSessionScreen() {
   };
 
   if (inRoom && session) {
-    return <RoomViewWrapper title={session.title} sessionId={id} wsHost={API_ORIGIN.replace(/^https?:\/\//, '')} authToken={authToken} selfUserId={selfParticipant?.user} selfRole={selfParticipant?.role} onLeave={() => setInRoom(false)} />;
+    const apiOrigin = new URL(getApiBaseUrl()).origin;
+    return <RoomViewWrapper title={session.title} sessionId={id} apiOrigin={apiOrigin} authToken={authToken} selfUserId={selfParticipant?.user} selfRole={selfParticipant?.role} onLeave={() => setInRoom(false)} />;
   }
 
   return (

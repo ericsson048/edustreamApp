@@ -10,6 +10,7 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { useAlert } from '../../../src/components/AlertDialog';
 import { LanguageSwitcher } from '../../../src/components/LanguageSwitcher';
 import { ThemeSwitcher } from '../../../src/components/ThemeSwitcher';
+import { ApiServerSettings } from '../../../src/components/ApiServerSettings';
 import { BorderRadius, FontSize, Spacing } from '../../../src/theme/colors';
 import { apiClient } from '../../../src/services/apiClient';
 
@@ -158,6 +159,8 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+
+        <ApiServerSettings />
 
         {/* ── Appearance ── */}
         <ThemedView variant="card" rounded="xl" elevated style={styles.section}>

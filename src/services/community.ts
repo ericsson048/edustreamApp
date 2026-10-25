@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { buildWebSocketUrl } from './realtime';
+import { buildWebSocketConnection } from './realtime';
 
 export interface Discussion {
   id: string;
@@ -94,11 +94,11 @@ export const communityService = {
     return data;
   },
   async createCommunitySocket(): Promise<WebSocket> {
-    const url = await buildWebSocketUrl('/ws/community/');
-    return new WebSocket(url);
+    const { url, protocols } = await buildWebSocketConnection('/ws/community/');
+    return new WebSocket(url, protocols);
   },
   async createStudyGroupSocket(groupId: string): Promise<WebSocket> {
-    const url = await buildWebSocketUrl(`/ws/community/groups/${groupId}/`);
-    return new WebSocket(url);
+    const { url, protocols } = await buildWebSocketConnection(`/ws/community/groups/${groupId}/`);
+    return new WebSocket(url, protocols);
   },
 };

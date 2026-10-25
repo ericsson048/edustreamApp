@@ -133,9 +133,7 @@ var isMicOn = true, isCamOn = true, isHandRaised = false;
 
 function connect() {
   var url = proto + host.replace(/^https?:\\/\\//, '') + '/ws/live/' + sessionId + '/';
-  if (token) url += '?token=' + encodeURIComponent(token);
-
-  ws = new WebSocket(url);
+  ws = new WebSocket(url, token ? ['edustream.jwt.' + token] : []);
   setStatus('connecting', 'Connecting...');
 
   ws.onopen = function () {

@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { buildWebSocketUrl } from './realtime';
+import { buildWebSocketConnection } from './realtime';
 
 export interface Conversation {
   id: string;
@@ -44,7 +44,7 @@ export const messagingService = {
     await apiClient.post(`/conversations/${conversationId}/mark_read/`);
   },
   async createConversationSocket(conversationId: string): Promise<WebSocket> {
-    const url = await buildWebSocketUrl(`/ws/messages/${conversationId}/`);
-    return new WebSocket(url);
+    const { url, protocols } = await buildWebSocketConnection(`/ws/messages/${conversationId}/`);
+    return new WebSocket(url, protocols);
   },
 };

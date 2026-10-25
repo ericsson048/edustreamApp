@@ -4,7 +4,7 @@ export interface AuthUser {
   id: string;
   email: string;
   full_name: string;
-  role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+  role: 'STUDENT' | 'INSTRUCTOR' | 'INSTITUTION_ADMIN' | 'ADMIN';
   avatar_url?: string;
   bio?: string;
   location?: string;
@@ -32,7 +32,7 @@ export const authService = {
   async forgotPassword(email: string) {
     await apiClient.post('/auth/forgot-password/', { email });
   },
-  async changePassword(payload: { old_password: string; new_password: string }) {
+  async changePassword(payload: { current_password: string; new_password: string }) {
     await apiClient.post('/auth/change-password/', payload);
   },
 };
