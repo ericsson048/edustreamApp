@@ -52,7 +52,10 @@ export async function testApiServerConnection(value: string) {
     throw error;
   }
 
-  if (response.status !== 401 && response.status !== 403) {
+  if (response.status === 400) {
+    throw new Error('Le serveur est joignable, mais Django refuse cette adresse. Ajoutez l’IP du serveur à DJANGO_ALLOWED_HOSTS puis redémarrez le backend.');
+  }
+  if (response.status !== 200 && response.status !== 401 && response.status !== 403) {
     throw new Error(`Le serveur a répondu avec le code ${response.status}. Vérifiez l’adresse de l’API.`);
   }
 }
